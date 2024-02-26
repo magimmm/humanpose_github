@@ -1,6 +1,7 @@
 import cv2
 import mediapipe as mp
 from ultralytics import YOLO
+
 class MediaPipeDetector():
     def __init__(self):
         self.deteced_landmarks = None
@@ -13,16 +14,15 @@ class MediaPipeDetector():
         self.mp_drawing = mp.solutions.drawing_utils
 
 
-
     def getlandmarks(self,img):
         img_width = img.shape[1]
         img_height = img.shape[0]
         annotated_image, result = self.detectPose(img,False)
-        self.deteced_landmarks = result.pose_landmarks.landmark
+        deteced_landmarks = result.pose_landmarks.landmark
         # Initialize lists to store the x and y coordinates of all landmarks
         all_landmarks = []
         # prejde vsetky landmarky a ak nejaky chyba, da mu nejaku specificku hodnotu
-        for landmark in self.deteced_landmarks:
+        for landmark in deteced_landmarks:
             if landmark['presence']:
                 landmark_x = int(landmark.x * img_width)
                 landmark_y = int(landmark.y * img_height)
@@ -63,7 +63,25 @@ class YoloDetector():
         # Load a model
         self.model = YOLO(self.model_type)
 
-    def get_landmarks(self):
+    def get_landmarks(self,img):
+        left_hip_index=12
         # Predict with the model
-        results = self.model(source='teste.jpg', show=True, save=True)
+        results = self.model(source=img, show=False, save=True)
+        landmarks = [landmark.cpu().numpy() for landmark in results[0].keypoints.xy]
+        detected_landmarks = landmarks[0]
+        all_landmarks = []
+        # prejde vsetky landmarky a ak nejaky chyba, da mu nejaku specificku hodnotu
+        for i,landmark in enumerate(detected_landmarks):
+            if landmark[0] == 0 and landmark[1]==0:
+                # TODO nejaka hodnota pre nedetekovane landmarky
+                all_landmarks.append(('null', 'null'))
+            else:
+                landmark_x = int(landmark.x)
+                landmark_y = int(landmark.y)
+                all_landmarks.append((landmark_x, landmark_y))
+
+            # Check if the current landmark is the one you want to stop at
+            if i==left_hip_index:
+                break  # Stop the loop if the landmark is reached
+        return all_landmarks
 
