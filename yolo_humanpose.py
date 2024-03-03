@@ -15,7 +15,8 @@ landmarks = [landmark.cpu().numpy() for landmark in results[0].keypoints.xy]
 landmarks=landmarks[0]
 for landmark in landmarks:
     # Check if the landmark is not null
-    if landmark[0] != 'null' and landmark[1] != 'null':
+
+    if landmark[0] != 0 and landmark[1] != 0:
         # Convert landmark coordinates to integers
         landmark_x = int(landmark[0])
         landmark_y = int(landmark[1])
