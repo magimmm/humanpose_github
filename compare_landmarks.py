@@ -5,13 +5,11 @@ import sys
 import mediapipe as mp
 import numpy as np
 
-
-
 import cv2
 from MediapipeSkeleton import MediaPipeSkeleton
 from YoloSkeleton import YoloSkeleton
 from human_pose_landmarks_detectors import MediaPipeDetector, YoloDetector
-
+from BodyNeuronNetwork import run_neuron_network
 
 def calculate_euclidean_distance(detected_landmarks, annotated_landmarks):
     # Convert landmarks to numpy arrays for easier computation
@@ -121,7 +119,9 @@ class LandmarkTester():
         # TODO odkomentovat ak chceme vidiet ako sa zobrazuju naanotovane body
         #self.view_skeletons_annotated('mediapipe')
         #self.view_skeletons_annotated('yolo')
-        self.run_and_compare()
+
+        #self.run_and_compare()
+        run_neuron_network(normal_skeletons=self.skeletons_yolo_normal,abnormal_skeletons=self.skeletons_yolo_abnormal,model='yolo')
 
 
     def load_images_paths(self):
@@ -135,6 +135,8 @@ class LandmarkTester():
 
         skeletons_abnormal_yolo = create_skeletons_from_annotations(self.path_annotation_file_abnormal, self.abnormal_images_paths,self.abnormal_images_filenames, model='yolo')
 
+        self.skeletons_yolo_abnormal=skeletons_abnormal_yolo
+        self.skeletons_yolo_normal=skeletons_normal_yolo
         self.skeletons_yolo = skeletons_normal_yolo + skeletons_abnormal_yolo
 
         skeletons_normal_mediapipe = create_skeletons_from_annotations(self.path_annotation_file_normal,
@@ -142,6 +144,8 @@ class LandmarkTester():
                                                                        self.normal_images_filenames, model = 'mediapipe')
 
         skeletons_abnormal_mediapipe = create_skeletons_from_annotations(self.path_annotation_file_abnormal, self.abnormal_images_paths,self.abnormal_images_filenames,model='mediapipe')
+        self.skeletons_mediapipe_normal=skeletons_normal_mediapipe
+        self.skeletons_mediapipe_abnormal=skeletons_abnormal_mediapipe
         self.skeletons_mediapipe = skeletons_normal_mediapipe + skeletons_abnormal_mediapipe
 
     def view_skeletons_annotated(self, model):
@@ -195,7 +199,6 @@ class LandmarkTester():
             total_mse += mse
             total_euclid += euclid
             time_total+=time_detection
-
 
         print('Mean squared error:', total_mse / len(skeletons))
         print('Mean Euclidean distance:', total_euclid / len(skeletons))

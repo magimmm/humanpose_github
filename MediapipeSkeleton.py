@@ -40,3 +40,9 @@ mediapipe skeleton for annotated images
                               self.right_wrist, self.left_wrist, self.right_pinky_finger, self.left_pinky_finger,
                               self.right_index_finger, self.left_index_finger, self.right_thumb, self.left_thumb,
                               self.right_hip, self.left_hip]
+
+        self.body=[           self.right_shoulder, self.left_shoulder, self.right_elbow,
+                              self.left_elbow,
+                              self.right_wrist, self.left_wrist, self.right_pinky_finger, self.left_pinky_finger,
+                              self.right_index_finger, self.left_index_finger, self.right_thumb, self.left_thumb,
+                              self.right_hip, self.left_hip]

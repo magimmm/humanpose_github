@@ -2,6 +2,10 @@ import cv2
 import mediapipe as mp
 from ultralytics import YOLO
 import time
+import logging
+
+# Set the logging level to suppress messages of INFO level or lower
+logging.basicConfig(level=logging.WARNING)
 
 class MediaPipeDetector():
     def __init__(self):
@@ -78,7 +82,8 @@ class YoloDetector():
         left_hip_index=11
         # Predict with the model
         start_time=time.time()
-        results = self.model(source=img, show=False, save=True)
+        results = self.model(source=img, show=False, save=False,verbose=False)
+        l=results[0]
         landmarks = [landmark.cpu().numpy() for landmark in results[0].keypoints.xy]
         detected_landmarks = landmarks[0]
         end_time=time.time()
