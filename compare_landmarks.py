@@ -9,7 +9,7 @@ import cv2
 from MediapipeSkeleton import MediaPipeSkeleton
 from YoloSkeleton import YoloSkeleton
 from human_pose_landmarks_detectors import MediaPipeDetector, YoloDetector
-from BodyNeuronNetwork import run_neuron_network
+from BodyNeuronNetwork import NeuronNetworkManager
 
 def calculate_euclidean_distance(detected_landmarks, annotated_landmarks):
     # Convert landmarks to numpy arrays for easier computation
@@ -59,7 +59,8 @@ def create_skeletons_from_annotations(annotation_file_path, images_paths,
         if model == 'mediapipe':
             skeleton = MediaPipeSkeleton(annotated_landmarks, images_paths[i])
         elif model == 'yolo':
-            skeleton = YoloSkeleton(annotated_landmarks, images_paths[i])
+            skeleton = YoloSkeleton()
+            skeleton.setup_from_annotation_file(annotated_landmarks, images_paths[i])
         skeletons_images.append(skeleton)
     return skeletons_images
 
@@ -119,10 +120,9 @@ class LandmarkTester():
         # TODO odkomentovat ak chceme vidiet ako sa zobrazuju naanotovane body
         #self.view_skeletons_annotated('mediapipe')
         #self.view_skeletons_annotated('yolo')
-
-        #self.run_and_compare()
-        run_neuron_network(normal_skeletons=self.skeletons_yolo_normal,abnormal_skeletons=self.skeletons_yolo_abnormal,model='yolo')
-
+        self.run_and_compare()
+        # TODO uncomment in case of wanting to train the model again
+        # self.body_nn_manager.train_model(normal_skeletons=self.skeletons_yolo_normal, abnormal_skeletons=self.skeletons_yolo_abnormal,model='yolo')
 
     def load_images_paths(self):
         self.normal_images_paths, self.normal_images_filenames = get_image_files_in_folder(self.folder_images_normal)
@@ -156,8 +156,12 @@ class LandmarkTester():
 
         for skeleton in selected_skeletons:
             img = cv2.imread(skeleton.path)
-            for landmark in skeleton.all_landmarks:
-                cv2.circle(img, (int(landmark[0]), int(landmark[1])), 4, (255, 120, 0), 1, 1)
+            for ind,landmark in enumerate(skeleton.all_landmarks):
+                if ind== 1:
+                    color = (255, 255, 255)
+                else:
+                    color = (255, 120, 0)
+                cv2.circle(img, (int(landmark[0]), int(landmark[1])), 4, color, 1, 1)
             cv2.namedWindow('annotated_landmarks', cv2.WINDOW_NORMAL)
             cv2.imshow('annotated_landmarks', img)
             cv2.waitKey(0)
@@ -187,13 +191,25 @@ class LandmarkTester():
             self.setup_mediapipe_detector()
             skeletons = self.skeletons_mediapipe
         else:
-            raise ValueError("Invalid detector type. Choose 'yolo' or 'mediapipe'.")
+            raise ValueError("Invalid detector model_type. Choose 'yolo' or 'mediapipe'.")
 
         total_mse = 0
         total_euclid = 0
         time_total= 0
         for annotated_skeleton in skeletons:
             detected_landmarks,time_detection = self.yolo_detector.get_landmarks(annotated_skeleton.path) if detector_type == 'yolo' else self.mediapipe_detector.get_landmarks(annotated_skeleton.path)
+
+            img = cv2.imread(annotated_skeleton.path)
+            for ind_l,landmark in enumerate(detected_landmarks):
+                if ind_l==1:
+                    color=(255, 255, 255)
+                else:
+                    color=(255, 120, 0)
+                cv2.circle(img, (int(landmark[0]), int(landmark[1])), 4, color, 1, 1)
+            cv2.namedWindow('annotated_landmarks', cv2.WINDOW_NORMAL)
+            cv2.imshow('detected_landmarks', img)
+            cv2.waitKey(0)
+
             euclid = calculate_euclidean_distance(detected_landmarks, annotated_skeleton.all_landmarks)
             mse = calculate_mse(detected_landmarks,annotated_skeleton.all_landmarks)
             total_mse += mse

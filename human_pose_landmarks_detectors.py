@@ -40,7 +40,7 @@ class MediaPipeDetector():
             if landmark.visibility:
                 landmark_x = int(landmark.x * img_width)
                 landmark_y = int(landmark.y * img_height)
-                all_landmarks.append((landmark_x, landmark_y))
+                all_landmarks.append([landmark_x, landmark_y])
             else:
                 # TODO nejaka hodnota pre nedetekovane landmarky
                 all_landmarks.append(('0', '0'))
@@ -79,11 +79,10 @@ class YoloDetector():
 
     def get_landmarks(self,img):
         #ziska landmarky priamo z modelu
-        left_hip_index=11
+        left_hip_index=12
         # Predict with the model
         start_time=time.time()
         results = self.model(source=img, show=False, save=False,verbose=False)
-        l=results[0]
         landmarks = [landmark.cpu().numpy() for landmark in results[0].keypoints.xy]
         detected_landmarks = landmarks[0]
         end_time=time.time()
@@ -100,7 +99,7 @@ class YoloDetector():
             else:
                 landmark_x = int(landmark[0])
                 landmark_y = int(landmark[1])
-                all_landmarks.append((landmark_x, landmark_y))
+                all_landmarks.append([landmark_x, landmark_y])
             # Check if the current landmark is the one you want to stop at
             if i==left_hip_index:
                 break  # Stop the loop if the landmark is reached
