@@ -22,6 +22,7 @@ class MediaPipeDetector():
     def get_landmarks(self,img_path):
         start_time = time.time()
         img=cv2.imread(img_path)
+        # TODO zmen na false
         annotated_image, result = self.detectPose(img,False)
         deteced_landmarks = result.pose_landmarks.landmark
         end_time = time.time()
@@ -37,19 +38,28 @@ class MediaPipeDetector():
             #print(landmark.presence)
             #print(landmark.visibility)
             # TODO upravit podmienku lebo vsade je presence 0 a visibility je od 0-1
-            if landmark.visibility:
+            if float(landmark.visibility)>0.6:
                 landmark_x = int(landmark.x * img_width)
                 landmark_y = int(landmark.y * img_height)
                 all_landmarks.append([landmark_x, landmark_y])
             else:
+
+                print(img_path,i,'missing', landmark.visibility)
                 # TODO nejaka hodnota pre nedetekovane landmarky
-                all_landmarks.append(('0', '0'))
+                all_landmarks.append([0,0])
             # Check if the current landmark is the one you want to stop at
             if i == index_left_hip:
                 break  # Stop the loop if the landmark is reached
+
+            # TODO vymazat
+            # Display the image with pose landmarks
+        # cv2.namedWindow('Pose Landmarks', cv2.WINDOW_NORMAL)
+        # cv2.imshow('Pose Landmarks', annotated_image)
+        # cv2.waitKey(0)
+
         return all_landmarks,time_detection
 
-    def detectPose(self, image_input, draw=False):
+    def detectPose(self, image_input, draw):
         original_image = image_input.copy()
 
         image_in_RGB = cv2.cvtColor(image_input, cv2.COLOR_BGR2RGB)
@@ -82,7 +92,7 @@ class YoloDetector():
         left_hip_index=12
         # Predict with the model
         start_time=time.time()
-        results = self.model(source=img, show=False, save=False,verbose=False)
+        results = self.model(source=img, show=False, save=False,verbose=True)
         landmarks = [landmark.cpu().numpy() for landmark in results[0].keypoints.xy]
         detected_landmarks = landmarks[0]
         end_time=time.time()
@@ -93,9 +103,7 @@ class YoloDetector():
             if landmark[0] == 0 and landmark[1]==0:
                 # TODO nejaka hodnota pre nedetekovane landmarky
                 all_landmarks.append((0, 0))
-                #print(img,i)
-                print()
-                print()
+                print(i,'missing')
             else:
                 landmark_x = int(landmark[0])
                 landmark_y = int(landmark[1])

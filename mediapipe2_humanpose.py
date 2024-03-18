@@ -54,7 +54,8 @@ image_path = 'Screenshot 2024-02-09 162507.png'
 image = cv2.imread(image_path)
 
 # Call the detectPose function
-annotated_image, _ = detectPose(image, pose_image, draw=True, display=False)
+annotated_image, r = detectPose(image, pose_image, draw=True, display=False)
+
 
 cv2.imshow('an',annotated_image)
 cv2.waitKey(0)

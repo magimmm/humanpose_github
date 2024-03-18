@@ -1,98 +1,9 @@
-import json
-import os
-import sys
-
-import mediapipe as mp
-import numpy as np
-
 import cv2
 from MediapipeSkeleton import MediaPipeSkeleton
 from YoloSkeleton import YoloSkeleton
 from human_pose_landmarks_detectors import MediaPipeDetector, YoloDetector
 from BodyNeuronNetwork import NeuronNetworkManager
-
-def calculate_euclidean_distance(detected_landmarks, annotated_landmarks):
-    # Convert landmarks to numpy arrays for easier computation
-    annotated_array = np.array(annotated_landmarks)
-    detected_array = np.array(detected_landmarks)
-
-    # Filter out points with coordinates (0, 0)
-    valid_indices = np.all(detected_array != 0, axis=1)
-    #print(valid_indices)
-    annotated_array = annotated_array[valid_indices]
-    detected_array = detected_array[valid_indices]
-
-    # Calculate the Euclidean distance between each pair of corresponding landmarks
-    distances = np.sqrt(np.sum(np.square(annotated_array - detected_array), axis=1))
-
-    # Calculate the average Euclidean distance
-    avg_distance = np.mean(distances)
-    #print(avg_distance)
-
-    return avg_distance
-
-
-def calculate_mse(detected_landmarks, annotated_landmarks):
-    # Convert landmarks to numpy arrays for easier computation
-    annotated_array = np.array(annotated_landmarks)
-    detected_array = np.array(detected_landmarks)
-
-    # Filter out points with coordinates (0, 0)
-    valid_indices = np.all(detected_array != 0, axis=1)
-    annotated_array = annotated_array[valid_indices]
-    detected_array = detected_array[valid_indices]
-
-    # Calculate squared differences between corresponding coordinates
-    squared_diffs = np.square(annotated_array - detected_array)
-
-    # Calculate the mean squared error
-    mse = np.mean(squared_diffs)
-
-    return mse
-def create_skeletons_from_annotations(annotation_file_path, images_paths,
-                                      images_filenames, model
-                                      ):
-    skeletons_images = []
-    for (i, img_filename) in enumerate(images_filenames):
-        annotated_landmarks = get_landmarks_from_annotation_file(img_filename, annotation_file_path)
-        # body zistene z anotovaneho suboru zoberie a vytvori z nich instanciu triedy
-        if model == 'mediapipe':
-            skeleton = MediaPipeSkeleton(annotated_landmarks, images_paths[i])
-        elif model == 'yolo':
-            skeleton = YoloSkeleton()
-            skeleton.setup_from_annotation_file(annotated_landmarks, images_paths[i])
-        skeletons_images.append(skeleton)
-    return skeletons_images
-
-
-def get_image_files_in_folder(folder_path):
-    images_paths = []
-    image_filenames = []
-    for file_name in os.listdir(folder_path):
-        # Check if the file is an image (you can add more extensions if needed)
-        if file_name.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
-            images_paths.append(os.path.join(folder_path, file_name))
-            image_filenames.append(file_name)
-    return images_paths, image_filenames
-
-
-def get_landmarks_from_annotation_file(img_filename, annotation_file_path):
-    # Load JSON data from a file
-    with open(annotation_file_path, 'r') as file:
-        data = json.load(file)
-
-    annotations = data['annotations']
-    images = data['images']
-    for i in images:
-        if i['file_name'] == img_filename:
-            id_img = i['id']
-            for a in annotations:
-                if id_img == a['id']:
-                    return a['keypoints']
-
-    print("Image not found!")
-    sys.exit(1)
-
+from utils import calculate_mse,calculate_euclidean_distance,create_skeletons_from_annotations,get_image_files_in_folder
 
 class LandmarkTester():
     def __init__(self, path_images_normal, path_images_abnormal, path_annotation_file_normal,
@@ -113,16 +24,9 @@ class LandmarkTester():
         # self.all_images_filemames = self.normal_images_filenames + self.abnormal_images_filenames
         # self.all_images_paths = self.normal_images_paths + self.abnormal_images_paths
 
-    def test(self):
-        self.load_images_paths()
-        self.create_skeletons()
-        # TODO prememenovat tuto funkciu
-        # TODO odkomentovat ak chceme vidiet ako sa zobrazuju naanotovane body
-        #self.view_skeletons_annotated('mediapipe')
-        #self.view_skeletons_annotated('yolo')
-        self.run_and_compare()
-        # TODO uncomment in case of wanting to train the model again
-        # self.body_nn_manager.train_model(normal_skeletons=self.skeletons_yolo_normal, abnormal_skeletons=self.skeletons_yolo_abnormal,model='yolo')
+    def train_body_neuron_network(self):
+        self.body_nn_manager=NeuronNetworkManager()
+        self.body_nn_manager.train_model(normal_skeletons=self.skeletons_yolo_normal, abnormal_skeletons=self.skeletons_yolo_abnormal,model='yolo')
 
     def load_images_paths(self):
         self.normal_images_paths, self.normal_images_filenames = get_image_files_in_folder(self.folder_images_normal)
@@ -167,7 +71,7 @@ class LandmarkTester():
             cv2.waitKey(0)
 
     def run_and_compare(self):
-        self.run_detector('yolo')
+        #self.run_detector('yolo')
         self.run_detector('mediapipe')
 
 
@@ -199,16 +103,16 @@ class LandmarkTester():
         for annotated_skeleton in skeletons:
             detected_landmarks,time_detection = self.yolo_detector.get_landmarks(annotated_skeleton.path) if detector_type == 'yolo' else self.mediapipe_detector.get_landmarks(annotated_skeleton.path)
 
-            img = cv2.imread(annotated_skeleton.path)
-            for ind_l,landmark in enumerate(detected_landmarks):
-                if ind_l==1:
-                    color=(255, 255, 255)
-                else:
-                    color=(255, 120, 0)
-                cv2.circle(img, (int(landmark[0]), int(landmark[1])), 4, color, 1, 1)
-            cv2.namedWindow('annotated_landmarks', cv2.WINDOW_NORMAL)
-            cv2.imshow('detected_landmarks', img)
-            cv2.waitKey(0)
+            # img = cv2.imread(annotated_skeleton.path)
+            # for ind_l,landmark in enumerate(detected_landmarks):
+            #     if ind_l==1:
+            #         color=(255, 255, 255)
+            #     else:
+            #         color=(255, 120, 0)
+            #     cv2.circle(img, (int(landmark[0]), int(landmark[1])), 4, color, 1, 1)
+            # cv2.namedWindow('annotated_landmarks', cv2.WINDOW_NORMAL)
+            # cv2.imshow('detected_landmarks', img)
+            # cv2.waitKey(0)
 
             euclid = calculate_euclidean_distance(detected_landmarks, annotated_skeleton.all_landmarks)
             mse = calculate_mse(detected_landmarks,annotated_skeleton.all_landmarks)
@@ -231,4 +135,21 @@ path_abnormal_images = 'Photos/abnormal_select'
 landmarktester = LandmarkTester(path_normal_images, path_images_abnormal=path_abnormal_images,
                                 path_annotation_file_normal='annotation/normal_keypoints_photos.json',
                                 path_annotation_file_abnormal='annotation/abnormal_keypoints_photos.json')
-landmarktester.test()
+landmarktester.load_images_paths()
+landmarktester.create_skeletons()#from annotations
+# TODO uncomment in case of wanting to train the model again
+#landmarktester.train_body_neuron_network()
+# TODO odkomentovat ak chceme vidiet ako sa zobrazuju naanotovane body
+# self.view_skeletons_annotated('mediapipe')
+# self.view_skeletons_annotated('yolo')
+
+landmarktester.run_and_compare()
+# yolo  5.3566
+# Mean squared error: 746.1339784812138
+# Mean Euclidean distance: 29.75326993896032
+# Time:  13.852840662002563
+#
+# mediPIPE
+# Mean squared error: 55607.92410538614
+# Mean Euclidean distance: 267.73781403977426
+# Time:  8.255919933319092

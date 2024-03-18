@@ -11,6 +11,7 @@ from YoloSkeleton import YoloSkeleton
 
 class NeuronNetworkManager:
     def __init__(self):
+        self.model = None
         self.num_features = 0
     def create_nn_input_from_skeletons(self,skeletons):
         skeletons_distances_list = []
@@ -74,52 +75,6 @@ class NeuronNetworkManager:
 
     def load_model(self):
         self.model = load_model("my_model")
-    def try_model(self,normal_skeletons,abnormal_skeletons,model):
-        # Generate sample data
-        num_samples = 100
-        if model == 'mediapipe':
-            num_features = 13
-        elif model == 'yolo':
-            # TODO len ruky aktualne
-            num_features = 6
-
-        abnormal_data=self.create_nn_input_from_skeletons(abnormal_skeletons)
-        normal_data=self.create_nn_input_from_skeletons(normal_skeletons)
-
-        #abnormal =0
-        #normal=1
-        # Generate normal data
-        #normal_data = np.random.normal(loc=0, scale=1, size=(num_samples // 2, num_features))
-
-        # Generate abnormal data
-        #abnormal_data = np.random.uniform(low=-2, high=2, size=(num_samples // 2, num_features))
-
-        # Create labels (0 for normal, 1 for abnormal)
-        labels = np.concatenate([np.zeros(num_samples // 2), np.ones(num_samples // 2)])
-
-        # Combine normal and abnormal data
-        data = np.concatenate([normal_data, abnormal_data])
-        # for d in data:
-        #     print(d)
-        # print(data)
-
-        # Shuffle data and labels
-        p = np.random.permutation(num_samples)
-        data = data[p]
-        labels = labels[p]
-
-        # Split data into training and testing sets
-        train_ratio = 0.8
-        num_train = int(train_ratio * num_samples)
-        x_train, x_test = data[:num_train], data[num_train:]
-        y_train, y_test = labels[:num_train], labels[num_train:]
-
-        model= load_model("my_model")
-        # Evaluate the model on test data
-        loss, accuracy = model.evaluate(x_test, y_test)
-        print("Test Loss:", loss)
-        print("Test Accuracy:", accuracy)
-
 
     def predict_img(self,features_vector):
         input_vector = np.array([features_vector])

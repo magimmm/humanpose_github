@@ -27,12 +27,30 @@ yolo skeleton of annotated images
         self.right_hip = detected_landmarks[12]
         self.setup_all_landmarks()
 
+    def setup_from_annotation_file(self,keypoints,path):
+        self.nose = (keypoints[0], keypoints[1])
+        self.right_eye = (keypoints[6], keypoints[7])
+        self.left_eye = (keypoints[15], keypoints[16])
+        self.right_ear = (keypoints[21], keypoints[22])
+        self.left_ear = (keypoints[24], keypoints[25])
+        self.right_shoulder = (keypoints[33], keypoints[34])
+        self.left_shoulder = (keypoints[36], keypoints[37])
+        self.right_elbow = (keypoints[39], keypoints[40])
+        self.left_elbow = (keypoints[42], keypoints[43])
+        self.right_wrist = (keypoints[45], keypoints[46])
+        self.left_wrist = (keypoints[48], keypoints[49])
+        self.right_hip = (keypoints[69], keypoints[70])
+        self.left_hip = (keypoints[72], keypoints[73])
+        self.path = path
+        self.setup_all_landmarks()
+
 
     def setup_all_landmarks(self):
         self.all_landmarks = [self.nose,
                               self.left_eye,
                               self.right_eye,
                               self.left_ear,
+                              self.right_ear,
                               self.left_shoulder,
                               self.right_shoulder,
                               self.left_elbow,
@@ -51,22 +69,8 @@ yolo skeleton of annotated images
             self.left_hip,
             self.right_hip]
 
-    def setup_from_annotation_file(self,keypoints,path):
-        self.nose = (keypoints[0], keypoints[1])
-        self.right_eye = (keypoints[6], keypoints[7])
-        self.left_eye = (keypoints[15], keypoints[16])
-        self.right_ear = (keypoints[21], keypoints[22])
-        self.left_ear = (keypoints[24], keypoints[25])
-        self.right_shoulder = (keypoints[33], keypoints[34])
-        self.left_shoulder = (keypoints[36], keypoints[37])
-        self.right_elbow = (keypoints[39], keypoints[40])
-        self.left_elbow = (keypoints[42], keypoints[43])
-        self.right_wrist = (keypoints[45], keypoints[46])
-        self.left_wrist = (keypoints[48], keypoints[49])
-        self.right_hip = (keypoints[69], keypoints[70])
-        self.left_hip = (keypoints[72], keypoints[73])
-        self.path = path
-        self.setup_all_landmarks()
+
+
 
     def calculate_arms_distances(self):
         self.right_wrist_to_elbow=calculate_distance(self.right_wrist,self.right_elbow)
@@ -75,6 +79,7 @@ yolo skeleton of annotated images
         self.left_wrist_to_elbow = calculate_distance(self.left_wrist, self.left_elbow)
         self.left_elbow_to_shoulder = calculate_distance(self.left_elbow, self.left_shoulder)
         self.left_wrist_to_shoulder = calculate_distance(self.left_wrist, self.left_shoulder)
+
     def create_body_nn_feature_vector(self):
         self.calculate_arms_distances()
         self.features_vector=[self.right_wrist_to_elbow, self.right_elbow_to_shoulder, self.right_wrist_to_shoulder,

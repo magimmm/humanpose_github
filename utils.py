@@ -1,100 +1,91 @@
-# Extract keypoint
+import json
+import os
+import sys
 
-print(results)
-print('-------------------')
-result_keypoint = results[0].keypoints.xyn.cpu().numpy()[0]
-print(result_keypoint)
+import numpy as np
 
-for result in results:
-    # Each 'result' corresponds to a detected person
-    keypoints = result['keypoints']
-    for keypoint in keypoints:
-        # 'keypoint' is a dictionary with 'name', 'x', 'y', and 'confidence'
-        x, y, confidence = keypoint['x'], keypoint['y'], keypoint['confidence']
-        # Use the ke
+from MediapipeSkeleton import MediaPipeSkeleton
+from YoloSkeleton import YoloSkeleton
 
-        import json
-        import os
+def calculate_euclidean_distance(detected_landmarks, annotated_landmarks):
+    # Convert landmarks to numpy arrays for easier computation
+    annotated_array = np.array(annotated_landmarks)
+    detected_array = np.array(detected_landmarks)
 
-        import cv2
-        from MediapipeSkeleton import MediaPipeSkeleton
-        from YoloSkeleton import YoloSkeleton
+    # Filter out points with coordinates (0, 0)
+    valid_indices = np.all(detected_array != 0, axis=1)
+    #print(valid_indices)
+    annotated_array = annotated_array[valid_indices]
+    detected_array = detected_array[valid_indices]
 
+    # Calculate the Euclidean distance between each pair of corresponding landmarks
+    distances = np.sqrt(np.sum(np.square(annotated_array - detected_array), axis=1))
+    # Calculate the average Euclidean distance
+    avg_distance = np.mean(distances)
+    #print(avg_distance)
 
-        def get_image_files_in_folder(folder_path):
-            image_files = []
-            image_filenames = []
-            for file_name in os.listdir(folder_path):
-
-                # Check if the file is an image (you can add more extensions if needed)
-                if file_name.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
-                    image_files.append(os.path.join(folder_path, file_name))
-                    image_filenames.append(file_name)
-            return image_files, image_filenames
+    return avg_distance
 
 
-        def photo_landmarks(filename):
-            # Load JSON data from a file
-            with open('annotation/person_keypoints_default.json', 'r') as file:
-                data = json.load(file)
+def calculate_mse(detected_landmarks, annotated_landmarks):
+    # Convert landmarks to numpy arrays for easier computation
+    annotated_array = np.array(annotated_landmarks)
+    detected_array = np.array(detected_landmarks)
 
-            images = data['images']
-            for i in images:
-                if i['file_name'] == filename:
-                    id_img = i['id']
+    # Filter out points with coordinates (0, 0)
+    valid_indices = np.all(detected_array != 0, axis=1)
+    annotated_array = annotated_array[valid_indices]
+    detected_array = detected_array[valid_indices]
 
-            annotations = data['annotations']
+    # Calculate squared differences between corresponding coordinates
+    squared_diffs = np.square(annotated_array - detected_array)
+
+    # Calculate the mean squared error
+    mse = np.mean(squared_diffs)
+
+    return mse
+
+def create_skeletons_from_annotations(annotation_file_path, images_paths,
+                                      images_filenames, model
+                                      ):
+    skeletons_images = []
+    for (i, img_filename) in enumerate(images_filenames):
+        annotated_landmarks = get_landmarks_from_annotation_file(img_filename, annotation_file_path)
+        # body zistene z anotovaneho suboru zoberie a vytvori z nich instanciu triedy
+        if model == 'mediapipe':
+            skeleton = MediaPipeSkeleton(annotated_landmarks, images_paths[i])
+        elif model == 'yolo':
+            skeleton = YoloSkeleton()
+            skeleton.setup_from_annotation_file(annotated_landmarks, images_paths[i])
+        skeletons_images.append(skeleton)
+    return skeletons_images
+
+
+def get_image_files_in_folder(folder_path):
+    images_paths = []
+    image_filenames = []
+    for file_name in os.listdir(folder_path):
+        # Check if the file is an image (you can add more extensions if needed)
+        if file_name.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
+            images_paths.append(os.path.join(folder_path, file_name))
+            image_filenames.append(file_name)
+    return images_paths, image_filenames
+
+
+def get_landmarks_from_annotation_file(img_filename, annotation_file_path):
+    # Load JSON data from a file
+    with open(annotation_file_path, 'r') as file:
+        data = json.load(file)
+
+    annotations = data['annotations']
+    images = data['images']
+    for i in images:
+        if i['file_name'] == img_filename:
+            id_img = i['id']
             for a in annotations:
                 if id_img == a['id']:
                     return a['keypoints']
 
-            return "Something went wrong"
+    print("Image not found!")
+    sys.exit(1)
 
-
-        def media_pipe_model_from_keypoints(keypoints):
-            skeleton = MediaPipeSkeleton(keypoints)
-
-
-        def create_skeletons_from_annotations(images_normal_annotated,
-                                              images_filenames, model='mediapipe'
-                                              ):
-            skeletons_images = []
-            for (i, filename) in enumerate(images_filenames):
-                annotated_landmarks = photo_landmarks(filename)
-                # body zistene z anotovaneho suboru zoberie a vytvori z nich instanciu triedy
-                if model == 'mediapipe':
-                    skeleton = MediaPipeSkeleton(annotated_landmarks, images_normal_annotated[i])
-                elif model == 'yolo':
-                    skeleton = YoloSkeleton(annotated_landmarks, images_normal_annotated[i])
-
-                skeletons_images.append(skeleton)
-            return skeletons_images
-
-
-        def view_annotated_landmarks(skeletons):
-            for (i, filename) in enumerate(images_filenames):
-                annotated_landmarks = photo_landmarks(filename)
-                # body zistene z anotovaneho suboru zoberie a vytvori z nich instanciu triedy
-                skeleton = MediaPipeSkeleton(annotated_landmarks, images_normal_annotated[i])
-                img = cv2.imread(images_normal_annotated[i])
-                for j in skeleton.all_landmarks:
-                    print(j)
-                    cv2.circle(img, (int(j[0]), int(j[1])), 4, (255, 120, 255), 1, 1)
-                cv2.imshow('jm', img)
-                cv2.waitKey(0)
-
-
-        def view_annotated_landmarks(skeletons):
-            for skeleton in skeletons:
-                img = cv2.imread(skeleton.path)
-                for j in skeleton.all_landmarks:
-                    print(j)
-                    cv2.circle(img, (int(j[0]), int(j[1])), 4, (0, 120, 255), 1, 1)
-                cv2.imshow('anotated_landmarks', img)
-                cv2.waitKey(0)
-
-
-        path_normal_images = 'Photos/normal_select'
-        images_normal_annotated, images_filenames = get_image_files_in_folder(path_normal_images)
-        skeletons = create_skeletons_from_annotations(images_normal_annotated, images_filenames, model='yolo')
-        view_annotated_landmarks(skeletons)

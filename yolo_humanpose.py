@@ -26,3 +26,4 @@ for landmark in landmarks:
 cv2.imshow('m',img)
 cv2.waitKey(0)
 
+#results = model(['bus.jpg', 'zidane.jpg'])  # list of 2 Results objects
