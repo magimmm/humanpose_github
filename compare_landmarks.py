@@ -5,6 +5,8 @@ from human_pose_landmarks_detectors import MediaPipeDetector, YoloDetector
 from BodyNeuronNetwork import NeuronNetworkManager
 from utils import calculate_mse,calculate_euclidean_distance,create_skeletons_from_annotations,get_image_files_in_folder
 
+class SkeletonsLoader():
+
 class LandmarkTester():
     def __init__(self, path_images_normal, path_images_abnormal, path_annotation_file_normal,
                  path_annotation_file_abnormal):

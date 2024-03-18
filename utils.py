@@ -53,10 +53,10 @@ def create_skeletons_from_annotations(annotation_file_path, images_paths,
         annotated_landmarks = get_landmarks_from_annotation_file(img_filename, annotation_file_path)
         # body zistene z anotovaneho suboru zoberie a vytvori z nich instanciu triedy
         if model == 'mediapipe':
-            skeleton = MediaPipeSkeleton(annotated_landmarks, images_paths[i])
+            skeleton = MediaPipeSkeleton()
         elif model == 'yolo':
             skeleton = YoloSkeleton()
-            skeleton.setup_from_annotation_file(annotated_landmarks, images_paths[i])
+        skeleton.setup_from_annotation_file(annotated_landmarks, images_paths[i])
         skeletons_images.append(skeleton)
     return skeletons_images
 
