@@ -4,7 +4,7 @@ import mediapipe as mp
 import matplotlib.pyplot as plt
 
 # Loading the image using OpenCV.
-img = cv2.imread("Personal-Driver-in-Dubai.jpg")
+img = cv2.imread("../Photos/Personal-Driver-in-Dubai.jpg")
 
 # Getting the image's width and height.
 img_width = img.shape[1]

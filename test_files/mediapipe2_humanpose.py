@@ -50,7 +50,7 @@ def detectPose(image_pose, pose, draw=False, display=False):
 
 
 # Load the image
-image_path = 'Screenshot 2024-02-09 162507.png'
+image_path = '../Photos/Screenshot 2024-02-09 162507.png'
 image = cv2.imread(image_path)
 
 # Call the detectPose function

@@ -2,7 +2,7 @@ import cv2
 import os
 
 # Open the video file
-cap = cv2.VideoCapture('Videos/anomal.mp4')
+cap = cv2.VideoCapture('../Videos/anomal.mp4')
 
 # Check if the video file was opened successfully
 if not cap.isOpened():

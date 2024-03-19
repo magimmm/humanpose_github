@@ -1,12 +1,13 @@
-import math
-class MediaPipeSkeleton:
+from Skeleton import Skeleton
+class MediaPipeSkeleton(Skeleton):
     """
-mediapipe skeleton for annotated images
+mediapipe skeleton for images
     """
 
     def __init__(self):
+        super().__init__()
         self.type='mediapipe'
-
+        self.missing_landmarks_indexes_as_yolo=[]
     def setup_from_detector(self,detected_landmarks):
         self.nose = detected_landmarks[0]
         self.right_eye_inner = detected_landmarks[1]
@@ -35,6 +36,7 @@ mediapipe skeleton for annotated images
         self.left_hip = detected_landmarks[24]
 
         self.setup_all_landmarks()
+
     def setup_from_annotation_file(self,keypoints, path):
         self.nose = (keypoints[0], keypoints[1])
         self.right_eye_inner = (keypoints[3], keypoints[4])
@@ -81,38 +83,8 @@ mediapipe skeleton for annotated images
                      self.right_index_finger, self.left_index_finger, self.right_thumb, self.left_thumb,
                      self.right_hip, self.left_hip]
 
+    def find_missing_points_as_yolo(self):
+        for i, landmark in enumerate(self.all_landmarks_as_yolo):
+            if landmark == [0, 0]:
+                self.missing_landmarks_indexes_as_yolo.append(i)
 
-
-    def setup_for_comparision(self):
-        self.all_landmarks_as_yolo= [self.nose,
-                              self.left_eye,
-                              self.right_eye,
-                              self.left_ear,
-                              self.right_ear,
-                              self.left_shoulder,
-                              self.right_shoulder,
-                              self.left_elbow,
-                              self.right_elbow,
-                              self.left_wrist,
-                              self.right_wrist,
-                              self.left_hip,
-                              self.right_hip]
-
-    def calculate_limbs_distances(self):
-        self.right_wrist_to_elbow = calculate_distance(self.right_wrist, self.right_elbow)
-        self.right_elbow_to_shoulder = calculate_distance(self.right_elbow, self.right_shoulder)
-        self.right_wrist_to_shoulder = calculate_distance(self.right_wrist, self.right_shoulder)
-        self.left_wrist_to_elbow = calculate_distance(self.left_wrist, self.left_elbow)
-        self.left_elbow_to_shoulder = calculate_distance(self.left_elbow, self.left_shoulder)
-        self.left_wrist_to_shoulder = calculate_distance(self.left_wrist, self.left_shoulder)
-        self.right_hip_to_shoulder=calculate_distance(self.right_hip,self.right_shoulder)
-        self.left_hip_to_shoulder=calculate_distance(self.left_hip,self.left_shoulder)
-        self.hip_to_hip=calculate_distance(self.left_hip,self.right_hip)
-        self.shoulder_to_shoulder=calculate_distance(self.right_shoulder,self.left_shoulder)
-
-
-
-def calculate_distance(point_one,point_two):
-    x1,y1=point_one[0],point_one[1]
-    x2,y2=point_two[0],point_two[1]
-    return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)

@@ -1,49 +1,11 @@
 import json
 import os
 import sys
-
-import numpy as np
+import math
 
 from MediapipeSkeleton import MediaPipeSkeleton
 from YoloSkeleton import YoloSkeleton
 
-def calculate_euclidean_distance(detected_landmarks, annotated_landmarks):
-    # Convert landmarks to numpy arrays for easier computation
-    annotated_array = np.array(annotated_landmarks)
-    detected_array = np.array(detected_landmarks)
-
-    # Filter out points with coordinates (0, 0)
-    valid_indices = np.all(detected_array != 0, axis=1)
-    #print(valid_indices)
-    annotated_array = annotated_array[valid_indices]
-    detected_array = detected_array[valid_indices]
-
-    # Calculate the Euclidean distance between each pair of corresponding landmarks
-    distances = np.sqrt(np.sum(np.square(annotated_array - detected_array), axis=1))
-    # Calculate the average Euclidean distance
-    avg_distance = np.mean(distances)
-    #print(avg_distance)
-
-    return avg_distance
-
-
-def calculate_mse(detected_landmarks, annotated_landmarks):
-    # Convert landmarks to numpy arrays for easier computation
-    annotated_array = np.array(annotated_landmarks)
-    detected_array = np.array(detected_landmarks)
-
-    # Filter out points with coordinates (0, 0)
-    valid_indices = np.all(detected_array != 0, axis=1)
-    annotated_array = annotated_array[valid_indices]
-    detected_array = detected_array[valid_indices]
-
-    # Calculate squared differences between corresponding coordinates
-    squared_diffs = np.square(annotated_array - detected_array)
-
-    # Calculate the mean squared error
-    mse = np.mean(squared_diffs)
-
-    return mse
 
 def create_skeletons_from_annotations(annotation_file_path, images_paths,
                                       images_filenames, model
@@ -88,4 +50,10 @@ def get_landmarks_from_annotation_file(img_filename, annotation_file_path):
 
     print("Image not found!")
     sys.exit(1)
+
+def calculate_distance(point_one,point_two):
+    x1,y1=point_one[0],point_one[1]
+    x2,y2=point_two[0],point_two[1]
+    return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+
 

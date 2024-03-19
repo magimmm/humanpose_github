@@ -1,13 +1,13 @@
 from ultralytics import YOLO
 import cv2
 # Load a model
-model = YOLO('yolov8n-pose.pt')
+model = YOLO('../yolov8n-pose.pt')
 
 # Predict with the model
 results = model(source="Screenshot 2024-02-09 162507.png", show=True, save=True)
 #print(results)
 
-img= cv2.imread('Screenshot 2024-02-09 162507.png')
+img= cv2.imread('../Photos/Screenshot 2024-02-09 162507.png')
 
 print(results[0].keypoints.xy)
 print('nnnnnnnnnnnn')

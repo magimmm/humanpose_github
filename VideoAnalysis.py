@@ -1,6 +1,7 @@
 import cv2
 from BodyNeuronNetwork import NeuronNetworkManager
-from human_pose_landmarks_detectors import YoloDetector,MediaPipeDetector
+from YoloDetector import YoloDetector
+from MediaPipeDetector import MediaPipeDetector
 from YoloSkeleton import YoloSkeleton
 from MediapipeSkeleton import MediaPipeSkeleton
 class Analyser:
@@ -80,7 +81,3 @@ class Analyser:
         # Release the video capture object and close all windows
         cap.release()
         cv2.destroyAllWindows()
-
-videoanalyser=Analyser('yolo')
-videoanalyser.setup_model()
-videoanalyser.run()

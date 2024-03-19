@@ -1,16 +1,12 @@
-import math
-class YoloSkeleton:
+from Skeleton import Skeleton
+class YoloSkeleton(Skeleton):
     """
-yolo skeleton of annotated images
+yolo skeleton of images
     """
 
     def __init__(self):
-        self.right_eye = None
-        self.nose = None
-        self.left_elbow_to_shoulder = None
+        super().__init__()
         self.model_type = 'yolo'
-        self.right_elbow_to_shoulder = None
-
     def setup_from_detector(self,detected_landmarks):
         self.nose = detected_landmarks[0]
         self.left_eye = detected_landmarks[1]
@@ -43,8 +39,6 @@ yolo skeleton of annotated images
         self.left_hip = (keypoints[72], keypoints[73])
         self.path = path
         self.setup_all_landmarks()
-
-
     def setup_all_landmarks(self):
         self.all_landmarks = [self.nose,
                               self.left_eye,
@@ -71,40 +65,6 @@ yolo skeleton of annotated images
 
 
 
-    def calculate_limbs_distances(self):
-        self.right_wrist_to_elbow = calculate_distance(self.right_wrist, self.right_elbow)
-        self.right_elbow_to_shoulder = calculate_distance(self.right_elbow, self.right_shoulder)
-        self.right_wrist_to_shoulder = calculate_distance(self.right_wrist, self.right_shoulder)
-        self.left_wrist_to_elbow = calculate_distance(self.left_wrist, self.left_elbow)
-        self.left_elbow_to_shoulder = calculate_distance(self.left_elbow, self.left_shoulder)
-        self.left_wrist_to_shoulder = calculate_distance(self.left_wrist, self.left_shoulder)
-        self.right_hip_to_shoulder=calculate_distance(self.right_hip,self.right_shoulder)
-        self.left_hip_to_shoulder=calculate_distance(self.left_hip,self.left_shoulder)
-        self.hip_to_hip=calculate_distance(self.left_hip,self.right_hip)
-        self.shoulder_to_shoulder=calculate_distance(self.right_shoulder,self.left_shoulder)
-    def calculate_arms_distances(self):
-        self.right_wrist_to_elbow=calculate_distance(self.right_wrist,self.right_elbow)
-        self.right_elbow_to_shoulder=calculate_distance(self.right_elbow,self.right_shoulder)
-        self.right_wrist_to_shoulder=calculate_distance(self.right_wrist,self.right_shoulder)
-        self.left_wrist_to_elbow = calculate_distance(self.left_wrist, self.left_elbow)
-        self.left_elbow_to_shoulder = calculate_distance(self.left_elbow, self.left_shoulder)
-        self.left_wrist_to_shoulder = calculate_distance(self.left_wrist, self.left_shoulder)
-
-    def create_body_nn_feature_vector(self):
-        self.calculate_arms_distances()
-        self.features_vector=[self.right_wrist_to_elbow, self.right_elbow_to_shoulder, self.right_wrist_to_shoulder,
-             self.left_wrist_to_elbow, self.left_elbow_to_shoulder, self.left_wrist_to_shoulder]
-
-    def create_body_nn_feature_vector_whole_body(self):
-        self.features_vector_whole_body = []
-        for index, keypoint in enumerate(self.body):
-            if index < len(self.body) - 1:
-                distance = calculate_distance(keypoint, self.body[index + 1])
-                self.features_vector_whole_body.append(distance)
 
 
-def calculate_distance(point_one,point_two):
-    x1,y1=point_one[0],point_one[1]
-    x2,y2=point_two[0],point_two[1]
-    return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
 

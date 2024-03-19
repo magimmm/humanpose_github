@@ -1,0 +1,23 @@
+
+-------------------------------------------------------------------------
+yolo  5.3566
+Mean squared error: 746.1339784812138
+Mean Euclidean distance: 29.75326993896032
+Time:  13.852840662002563
+
+mediPIPE
+Mean squared error: 55607.92410538614
+Mean Euclidean distance: 267.73781403977426
+Time:  8.255919933319092
+
+
+img = cv2.imread(annotated_skeleton.path)
+for ind_l,landmark in enumerate(detected_landmarks):
+    if ind_l==1:
+        color=(255, 255, 255)
+    else:
+        color=(255, 120, 0)
+    cv2.circle(img, (int(landmark[0]), int(landmark[1])), 4, color, 1, 1)
+cv2.namedWindow('annotated_landmarks', cv2.WINDOW_NORMAL)
+cv2.imshow('detected_landmarks', img)
+cv2.waitKey(0)
