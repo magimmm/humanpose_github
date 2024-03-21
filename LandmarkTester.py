@@ -223,5 +223,4 @@ class LandmarkTester():
         avg_distance = np.mean(distances)
         # print(avg_distance)
 
-        return avg_distance
-
+        return a
