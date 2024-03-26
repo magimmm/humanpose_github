@@ -7,6 +7,8 @@ path_annotation_file_abnormal='annotation/abnormal_keypoints_photos.json'
 
 landmarktester = LandmarkTester()
 landmarktester.load_skeletons_from_annotation_files(path_normal_images,path_abnormal_images,path_annotation_file_normal,path_annotation_file_abnormal,train_new_model=False,show_yolo_landmarks=False,show_mediapipe_landmarks=False )
-landmarktester.create_skeletons_from_detections()
+landmarktester.create_skeletons_from_detections(landmarktester.images_paths)
 landmarktester.compare()
+landmarktester.measure_time()
+
 

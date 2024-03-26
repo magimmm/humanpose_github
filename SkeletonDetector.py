@@ -7,8 +7,6 @@ class SkeletonDetector():
     def __init__(self):
         self.detected_skeletons_mediape=[]
         self.detected_skeletons_yolo=[]
-        self.time_yolo = 0
-        self.time_mediapipe = 0
 
     def setup_yolo_detector(self):
         # TODO yolo rozne modely
@@ -23,14 +21,12 @@ class SkeletonDetector():
         self.setup_yolo_detector()
         self.setup_mediapipe_detector()
         for path in images_paths:
-            yolo_detected_landmarks, yolo_time_detection = self.yolo_detector.get_landmarks(path)
-            self.time_yolo=self.time_yolo+yolo_time_detection
+            yolo_detected_landmarks = self.yolo_detector.get_landmarks(path)
             yolo_skeleton=YoloSkeleton()
             yolo_skeleton.setup_from_detector(yolo_detected_landmarks)
             self.detected_skeletons_yolo.append(yolo_skeleton)
 
-            mediapipe_detected_landmarks, medipipe_time_detection = self.mediapipe_detector.get_landmarks(path)
-            self.time_mediapipe=self.time_mediapipe+medipipe_time_detection
+            mediapipe_detected_landmarks = self.mediapipe_detector.get_landmarks(path)
             mediapipe_skeleton=MediaPipeSkeleton()
             mediapipe_skeleton.setup_from_detector(mediapipe_detected_landmarks)
             self.detected_skeletons_mediape.append(mediapipe_skeleton)

@@ -3,7 +3,10 @@ from SkeletonLoader import SkeletonsLoader
 from SkeletonDetector import SkeletonDetector
 from utils import calculate_distance
 import numpy as np
-from MediapipeSkeleton import MediaPipeSkeleton
+import time
+from ultralytics import YOLO
+import cv2
+import mediapipe as mp
 
 class LandmarkTester():
     def __init__(self):
@@ -11,8 +14,6 @@ class LandmarkTester():
         self.loaded_skeletons_mediapipe = None
         self.detected_skeletons_mediapipe = []
         self.detected_skeletons_yolo = []
-        self.time_yolo = 0
-        self.time_mediapipe = 0
         self.images_paths = []
 
     def load_skeletons_from_annotation_files(self, path_normal_images, path_abnormal_images, path_annotation_file_normal, path_annotation_file_abnormal, train_new_model, show_yolo_landmarks, show_mediapipe_landmarks):
@@ -29,22 +30,40 @@ class LandmarkTester():
 
         self.loaded_skeletons_mediapipe = copy.deepcopy(skeleton_loader.skeletons_mediapipe)
         self.loaded_skeletons_yolo = copy.deepcopy(skeleton_loader.skeletons_yolo)
+        self.create_path_lists_in_order()
+
 
     def create_path_lists_in_order(self):
         # create lists with filenames so the detected and annotated will be in the same order
         for skeleton in self.loaded_skeletons_yolo:
             self.images_paths.append(skeleton.path)
 
-    def create_skeletons_from_detections(self):
-        self.create_path_lists_in_order()
+    def create_skeletons_from_detections(self,images_paths):
         skeleton_detector = SkeletonDetector()
-        skeleton_detector.detect_and_create_skeletons(self.images_paths)
+        skeleton_detector.detect_and_create_skeletons(images_paths)
         self.detected_skeletons_mediapipe = skeleton_detector.detected_skeletons_mediape
         self.detected_skeletons_yolo = skeleton_detector.detected_skeletons_yolo
-        self.time_yolo = skeleton_detector.time_yolo
-        self.time_mediapipe = skeleton_detector.time_mediapipe
 
     def compare(self):
+        # cv2.namedWindow('tesr',cv2.WINDOW_NORMAL)
+        # img=cv2.imread(self.loaded_skeletons_yolo[0].path)
+        # count=0
+        # for d,r in zip(self.detected_skeletons_yolo[0].all_landmarks, self.loaded_skeletons_yolo[0].all_landmarks):
+        #     wd = tuple(map(int, d))
+        #     wr = tuple(map(int, r))
+        #     cv2.circle(img, wd, 5, (255, 255, 255), -1)  # Green circle at limb start point
+        #     cv2.circle(img, wr, 5, (0, 255, 0), -1)  # Green circle at limb end point
+        #
+        #     cv2.putText(img, str(count), (wd[0] + 10, wd[1] + 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+        #     cv2.putText(img, str(count), (wr[0] + 10, wr[1] + 10),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
+        #     count+=1
+        # cv2.imshow('tesr', img)
+        # cv2.waitKey(0)
+        #
+
+
+
+
         self.img_count=len(self.detected_skeletons_mediapipe)
         for detected_mp_skeleton,detected_y_skeleton, real_mp_skeleton,real_y_skeleton in zip(self.detected_skeletons_mediapipe,self.detected_skeletons_yolo,self.loaded_skeletons_mediapipe,self.loaded_skeletons_yolo):
             detected_mp_skeleton.preprocess_for_comparing()
@@ -52,24 +71,59 @@ class LandmarkTester():
             real_mp_skeleton.preprocess_for_comparing()
             real_y_skeleton.preprocess_for_comparing()
 
-        print('Mediapipe, Yolo')
-        print('Time: ', self.time_mediapipe,self.time_yolo)
+        # print('Mediapipe, Yolo')
+        # print('Time: ', self.time_mediapipe,self.time_yolo)
         self.pcp()
         self.mpjpe()
         self.pck()
         self.mse()
         self.missing_landmarks()
 
+    def measure_time(self):
+        time_mp=self.measure_time_mp()
+        time_yolo=self.measure_time_yolo()
+        print('new time Mediapipe, Yolo')
+        print('Time: ', time_mp, time_yolo)
+        self.images_paths
+
+    def measure_time_mp(self):
+        start = time.time()
+        mp_pose = mp.solutions.pose
+        pose_image = mp_pose.Pose(static_image_mode=True, min_detection_confidence=0.5)
+        # Initialize mediapipe drawing class - to draw the landmarks points.
+        mp_drawing = mp.solutions.drawing_utils
+        for path in self.images_paths:
+            img = cv2.imread(path)
+            image_in_RGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            result = pose_image.process(image_in_RGB)
+            #deteced_landmarks = result.pose_landmarks.landmark
+        end = time.time()
+        duration = end - start
+        return duration
+    def measure_time_yolo(self):
+        models = ['yolov8n-pose.pt', 'yolov8s-pose.pt', 'yolov8m-pose.pt', 'yolov8l-pose.pt', 'yolov8x-pose.pt']
+        start = time.time()
+        model=YOLO('yolov8n-pose.pt')
+        for path in self.images_paths:
+            results = model(source=path, show=False, save=False, verbose=False,max_det=1)
+            #detected_landmarks = [landmark.cpu().numpy() for landmark in results[0].keypoints.xy][0]
+
+        end=time.time()
+        duration=end-start
+        return duration
     def calculate_pcp(self, detected_skeletons,real_skeletons):
         limbs_count = len(detected_skeletons[0].limbs)
         total_percentage=0
         for detected_skeleton,real_skeleton in zip(detected_skeletons,real_skeletons):
             percentage=self.calculate_pcp_one_img(detected_skeleton,real_skeleton,limbs_count)
             total_percentage+=percentage
-        return percentage/self.img_count
+        return (percentage/self.img_count)*100
 
     def calculate_pcp_one_img(self,detected_skeleton,real_skeleton,limbs_count):
         correct = 0
+        # cv2.namedWindow('tr', cv2.WINDOW_NORMAL)
+        #
+        # img=cv2.imread(real_skeleton.path)
         for i, limb_keypoints in enumerate(detected_skeleton.limbs_indexes_in_body_list):
             limb_length = detected_skeleton.limbs[i]
             limb_start_real = real_skeleton.all_landmarks_as_yolo[limb_keypoints[0]]
@@ -84,8 +138,40 @@ class LandmarkTester():
 
             #if distance < limb_length:
                 #correct += 1
-            if dist_limb_end<limb_length/2 and dist_limb_start<limb_length/2:
+            threshold=limb_length*0.5
+            #print(dist_limb_end, dist_limb_start, limb_length,threshold)
+            if dist_limb_end<threshold and dist_limb_start<threshold:
                 correct+=1
+        #         # Convert points to integer for drawing
+        #     limb_start_detected = tuple(map(int, limb_start_detected))
+        #     limb_end_detected = tuple(map(int, limb_end_detected))
+        #     limb_start_real = tuple(map(int, limb_start_real))
+        #     limb_end_real = tuple(map(int, limb_end_real))
+        #     threshold = int(threshold)
+        #
+        #     wd = tuple(map(int, detected_skeleton.right_wrist))
+        #     wr = tuple(map(int, real_skeleton.right_wrist))
+        #     cv2.circle(img, wd, 5, (255, 255, 255), -1)  # Green circle at limb start point
+        #     cv2.circle(img, wr, 5, (0, 255, 0), -1)  # Green circle at limb end point
+        #
+        #     # Draw the points
+        #     # cv2.circle(img, limb_start_detected, 5, (0, 255, 0), -1)  # Green circle at limb start point
+        #     # cv2.circle(img, limb_end_detected, 5, (0, 255, 0), -1)  # Green circle at limb end point
+        #     #
+        #     # cv2.circle(img, limb_start_real, 5, (0, 0, 255), -1)  # Green circle at limb start point
+        #     # cv2.circle(img, limb_end_real, 5, (0, 0, 255), -1)  # Green circle at limb end point
+        #
+        #     # Draw circles around points with the threshold radius
+        #     cv2.circle(img, limb_start_real, threshold, (255, 0, 0), 1)  # Blue circle around start point
+        #     cv2.circle(img, limb_end_real, threshold, (255, 0, 0), 1)  # Blue circle around end point
+        #     print(dist_limb_end, dist_limb_start, limb_length, threshold)
+        #     print('cor', correct)
+        #
+        #     cv2.imshow('tr',img)
+        #     cv2.waitKey(0)
+        #
+        #
+        # print('pcp',correct/limbs_count)
         return correct/limbs_count
 
     def pcp(self):
@@ -117,14 +203,20 @@ class LandmarkTester():
 
 
     def pck_one_img(self,detected_landmarks, real_landmarks):
+        # TODO nezaratavat nulove !
         annotated_array = np.array(real_landmarks)
         detected_array = np.array(detected_landmarks)
 
-        # Calculate the Euclidean distance between each pair of corresponding landmarks
-        distances = np.sqrt(np.sum(np.square(annotated_array - detected_array), axis=1))
-        distances_in_threshold = np.sum(distances < 70)
+        threshold=70
 
-        return distances_in_threshold/len(real_landmarks)
+        non_zero_indices = np.all(detected_array != [0, 0], axis=1)
+        annotated_non_zero = annotated_array[non_zero_indices]
+        detected_non_zero = detected_array[non_zero_indices]
+
+        # Calculate the Euclidean distance between each pair of corresponding landmarks
+        distances = np.sqrt(np.sum(np.square(annotated_non_zero - detected_non_zero), axis=1))
+        distances_in_threshold = np.sum(distances < threshold)
+        return distances_in_threshold/len(non_zero_indices)
 
     def missing_landmarks(self):
         mp_all = 0
@@ -223,4 +315,4 @@ class LandmarkTester():
         avg_distance = np.mean(distances)
         # print(avg_distance)
 
-        return a
+        return avg_distance

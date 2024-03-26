@@ -66,6 +66,15 @@ class Skeleton:
         self.left_hip_to_shoulder = calculate_distance(self.left_hip, self.left_shoulder)
         self.hip_to_hip = calculate_distance(self.left_hip, self.right_hip)
         self.shoulder_to_shoulder = calculate_distance(self.right_shoulder, self.left_shoulder)
+        self.wrist_to_wrist=calculate_distance(self.right_wrist,self.left_wrist)
+        self.elbow_to_elbow=calculate_distance(self.right_elbow,self.left_elbow)
+        self.right_wrist_hip=calculate_distance(self.right_wrist,self.right_hip)
+        self.left_wrist_hip=calculate_distance(self.left_wrist,self.left_hip)
+        self.right_wrist_left_hip=calculate_distance(self.right_wrist,self.left_hip)
+        self.left_wrist_right_hip=calculate_distance(self.left_wrist,self.right_hip)
+        self.right_wrist_left_shoulder=calculate_distance(self.right_wrist,self.left_shoulder)
+        self.left_wrist_right_shoulder=calculate_distance(self.left_wrist,self.right_shoulder)
+
         self.limbs=[self.right_wrist_to_elbow,
                     self.right_elbow_to_shoulder,
                     self.left_wrist_to_elbow,
@@ -77,8 +86,22 @@ class Skeleton:
         self.limbs_indexes_in_body_list = [[10,8],[8,6],[9,7],[7,5],[12,6],[11,5],[11,12],[5,6]]
     def create_body_nn_feature_vector(self):
         self.calculate_limbs_distances()
-        self.features_vector=[self.right_wrist_to_elbow, self.right_elbow_to_shoulder, self.right_wrist_to_shoulder,
-             self.left_wrist_to_elbow, self.left_elbow_to_shoulder, self.left_wrist_to_shoulder]
+        self.features_vector=[self.right_wrist_to_elbow,
+                              self.right_elbow_to_shoulder,
+                              self.right_wrist_to_shoulder,
+                             self.left_wrist_to_elbow,
+                              self.left_elbow_to_shoulder,
+                              self.left_wrist_to_shoulder,
+                              self.right_hip_to_shoulder,
+                              self.left_hip_to_shoulder,
+                            self.wrist_to_wrist,
+                            self.elbow_to_elbow,
+                            self.right_wrist_hip,
+                            self.left_wrist_hip,
+                            self.right_wrist_left_hip,
+                            self.left_wrist_right_hip,
+                              self.right_wrist_left_shoulder,
+                              self.left_wrist_right_shoulder]
 
     def create_body_nn_feature_vector_whole_body(self):
         self.features_vector_whole_body = []
@@ -90,6 +113,8 @@ class Skeleton:
     def preprocess_for_comparing(self):
         self.calculate_limbs_distances()
         self.find_missing_points()
+        self.create_body_nn_feature_vector()
+        self.create_body_nn_feature_vector_whole_body()
 
         self.all_landmarks_as_yolo = [self.nose,
                                       self.left_eye,

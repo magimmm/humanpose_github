@@ -8,6 +8,43 @@ class Analyser:
     def __init__(self,detecotr_type):
         self.detector_type=detecotr_type
         self.threshold=0.55
+        #positive=abnormal
+        self.false_positive=0
+        self.false_negative=0
+        self.true_positive=0
+        self.true_negative=0
+        self.abnormal_ranges = [
+            (5404, 5455, "cough"),
+            (5488, 5540, "scratch"),
+            (5741, 5845, 'scratch'),
+            (6120, 6219, "cough"),
+            (6581, 6674, "cough"),
+            (7019, 7070, "cough"),
+            (7895, 8003, "cough"),
+            (8399, 8443, "cough"),
+            (8516, 8701, "scratch"),
+            (8959, 9036, "cough"),
+            (9399, 9510, "cough"),
+            (9673, 9886, 'scratch'),
+            (10352, 10466, "cough"),
+            (10666, 10766, "cough"),
+            (11252, 11360, "cough"),
+            (11412, 11515, "cough"),
+            (12264, 12327, "cough"),
+            (12563, 12616, "cough"),
+            (12932, 13123, 'yawn'),
+            (13393, 13463, "cough"),
+            (13681, 13950, "scratch"),
+            (14342, 14525, "scratch"),
+            (15060, 15097, "cough"),
+            (15193, 15293, "cough"),
+            (15628, 15700, "cough"),
+            (16269, 16343, "cough"),
+            (16460, 16547, "scratch"),
+            (17105, 17170, "cough"),
+            (17287, 17330, 'yawn'),
+        ]
+
 
     def setup_mediapipe_detector(self):
         self.mediapipe_detector = MediaPipeDetector()
@@ -24,7 +61,7 @@ class Analyser:
         self.body_nn_manager.load_model()
 
     def process_frame(self,frame):
-        detected_landmarks, time_detection = self.yolo_detector.get_landmarks(frame) if self.detector_type == 'yolo' else self.mediapipe_detector.get_landmarks(
+        detected_landmarks = self.yolo_detector.get_landmarks(frame) if self.detector_type == 'yolo' else self.mediapipe_detector.get_landmarks(
             frame)
         if self.detector_type=='yolo':
             skeleton=YoloSkeleton()
@@ -33,10 +70,11 @@ class Analyser:
 
 
         result= self.body_nn_manager.predict_img(skeleton.features_vector)
-        if result<0.55:
-            return 'Normal'
+        if result>0.55:
+            #not notmal
+            return True
         else:
-            return 'Not Normal'
+            return False
 
     def run(self):
         if self.detector_type=='yolo':
@@ -52,9 +90,9 @@ class Analyser:
             print("Error: Could not open video.")
             exit()
 
-        frame_number = 0
-        frame_skip = 5  # Process every nth frame
-
+        frame_count=5400
+        # frame_skip=0
+        cap.set(cv2.CAP_PROP_POS_FRAMES, 5400)
         # Process each frame
         while True:
             ret, frame = cap.read()
@@ -62,22 +100,69 @@ class Analyser:
             if not ret:
                 break
 
-            # Display every 5th frame
-            if frame_number % frame_skip == 0:
+            # if frame_count%frame_skip==0:
+            if 1:
                 result=self.process_frame(frame)
 
+                self.check_detection(result, frame_count)
+
                 # Add text to the frame indicating the frame number
-                cv2.putText(frame, f'Driver state: {result}', (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                # cv2.putText(frame, f'Driver state: {result}', (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                #
+                # # Display the frame
+                # cv2.imshow('Video', frame)
+                #
+                # # Check for key press to exit
+                # if cv2.waitKey(5) & 0xFF == ord('q'):
+                #     break
 
-                # Display the frame
-                cv2.imshow('Video', frame)
+            frame_count+=1
 
-                # Check for key press to exit
-                if cv2.waitKey(25) & 0xFF == ord('q'):
-                    break
-
-            frame_number += 1
 
         # Release the video capture object and close all windows
         cap.release()
         cv2.destroyAllWindows()
+        self.calculate_sensitivity_specificity()
+
+
+    def calculate_sensitivity_specificity(self):
+        total = self.true_negative + self.true_positive + self.false_negative + self.false_positive
+        self.sensitivity = self.true_positive / (self.true_positive + self.false_negative)
+        self.specificity = self.true_negative / (self.true_negative + self.false_positive)
+        self.accuracy = (self.true_positive + self.true_negative) / total
+        print("Specificity:", self.specificity)
+        print("Sensitivity:", self.sensitivity)
+        print("Accuracy:", self.accuracy)
+
+    def check_detection(self,abnormal,frame_count):
+        abnormal_real_state=False
+        for start, end, action in self.abnormal_ranges:
+            if start <= frame_count <= end:
+                abnormal_real_state = True
+
+        #bol vyhodnoteny ako abnormal
+        if abnormal:
+            #a aj je abnormal
+            if abnormal_real_state:
+                self.true_positive += 1
+                # print('true positive',frame_count)
+            #ale je normal- takze bol zle ako pozitiv
+            else:
+                # pr\int('false postive ',frame_count)
+                # cv2.imwrite('Photos/false_positive/'+str(frame_count)+'.jpg',frame)
+
+                self.false_positive+=1
+        # bol vyhodnoteny ako normalny
+        else:
+            #ale v skutocnosti nie je
+            if abnormal_real_state:
+                self.false_negative+=1
+                # print('false negative  ',frame_count)
+                # cv2.imwrite('Photos/false_negative/'+str(frame_count)+'.jpg',frame)
+
+            else:
+                self.true_negative+=1
+                # print('true negative',frame_count)
+
+
+

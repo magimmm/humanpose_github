@@ -2,21 +2,19 @@ import cv2
 import os
 
 # Open the video file
-cap = cv2.VideoCapture('../Videos/anomal.mp4')
+cap = cv2.VideoCapture('../Videos/normal.mp4')
 
 # Check if the video file was opened successfully
 if not cap.isOpened():
     print("Error opening video file")
 
 # Create directory to store extracted frames
-if not os.path.exists('frames'):
-    os.makedirs('frames')
-
 # Set interval for extracting frames (in seconds)
-interval = 0.2
+
 
 # Initialize frame counter
 count = 0
+cap.set(cv2.CAP_PROP_POS_FRAMES, 26111)
 
 # Loop through video frames
 while True:
@@ -30,10 +28,9 @@ while True:
     # Increment frame counter
     count += 1
 
-    # Extract frame at specified interval
-    if count % (interval * cap.get(cv2.CAP_PROP_FPS)) == 0:
-        # Save the extracted frame as an image file
-        cv2.imwrite(f'Photos/abnormal/abnormal{count}.jpg', frame)
+    # Save the extracted frame as an image file
+    path='../Photos/fr/'+str(count)+'.jpg'
+    cv2.imwrite(path, frame)
 
 
 # Release the video file and close all windows

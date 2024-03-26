@@ -1,5 +1,4 @@
 import cv2
-from BodyNeuronNetwork import NeuronNetworkManager
 from utils import create_skeletons_from_annotations,get_image_files_in_folder
 
 class SkeletonsLoader():
@@ -45,11 +44,6 @@ class SkeletonsLoader():
         self.skeletons_mediapipe_normal = skeletons_normal_mediapipe
         self.skeletons_mediapipe_abnormal = skeletons_abnormal_mediapipe
         self.skeletons_mediapipe = skeletons_normal_mediapipe + skeletons_abnormal_mediapipe
-
-
-    def train_body_neuron_network(self):
-        self.body_nn_manager=NeuronNetworkManager()
-        self.body_nn_manager.train_model(normal_skeletons=self.skeletons_yolo_normal, abnormal_skeletons=self.skeletons_yolo_abnormal,model='yolo')
 
     def view_skeletons_annotated(self, model):
         if model == 'mediapipe':
