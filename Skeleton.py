@@ -110,11 +110,23 @@ class Skeleton:
                 distance = calculate_distance(keypoint, self.body[index + 1])
                 self.features_vector_whole_body.append(distance)
 
+    def find_bounding_box(self):
+        x_min = min(landmark[0] for landmark in self.all_landmarks)
+        y_min = min(landmark[1] for landmark in self.all_landmarks)
+        x_max = max(landmark[0] for landmark in self.all_landmarks)
+        y_max = max(landmark[1] for landmark in self.all_landmarks)
+
+        top_left=[x_min,y_min]
+        bottom_right=[x_max,y_max]
+        self.diagonal_bounding_box = math.sqrt((x_max - x_min)**2 + (y_max - y_min)**2)
+
+
     def preprocess_for_comparing(self):
         self.calculate_limbs_distances()
         self.find_missing_points()
         self.create_body_nn_feature_vector()
         self.create_body_nn_feature_vector_whole_body()
+        self.find_bounding_box()
 
         self.all_landmarks_as_yolo = [self.nose,
                                       self.left_eye,
@@ -130,6 +142,18 @@ class Skeleton:
                                       self.left_hip,
                                       self.right_hip]
 
+    def find_face(self):
+        landmarks = [landmark for landmark in
+                     [self.nose, self.left_eye, self.right_eye, self.left_ear, self.right_ear, self.left_shoulder, self.right_shoulder] if landmark != [0, 0]]
+
+            # Calculate minimum and maximum coordinates using valid landmarks
+        self.x_min = min(landmark[0] for landmark in landmarks)
+        self.x_max = max(landmark[0] for landmark in landmarks)
+        self.y_min = min(landmark[1] for landmark in landmarks)
+        self.y_max = max(landmark[1] for landmark in landmarks)
+        print(self.y_max,self.y_min,self.x_max,self.x_min)
+
+            # Extract the region of interest (ROI) from the image
 def calculate_distance(point_one,point_two):
     x1,y1=point_one[0],point_one[1]
     x2,y2=point_two[0],point_two[1]

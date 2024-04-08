@@ -4,9 +4,10 @@ class YoloSkeleton(Skeleton):
 yolo skeleton of images
     """
 
-    def __init__(self):
+    def __init__(self,path=None):
         super().__init__()
         self.model_type = 'yolo'
+        self.path=path
     def setup_from_detector(self,detected_landmarks):
         self.nose = detected_landmarks[0]
         self.left_eye = detected_landmarks[1]

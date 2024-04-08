@@ -7,7 +7,7 @@ class MediaPipeDetector():
 
     def setup_detector(self):
         self.mp_pose = mp.solutions.pose
-        self.pose_image = self.mp_pose.Pose(static_image_mode=True, min_detection_confidence=0.5)
+        self.pose_image = self.mp_pose.Pose(static_image_mode=True, min_detection_confidence=0.5,model_complexity=0)
 
         # Initialize mediapipe drawing class - to draw the landmarks points.
         self.mp_drawing = mp.solutions.drawing_utils

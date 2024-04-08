@@ -4,13 +4,13 @@ from matplotlib.colors import ListedColormap
 
 # Data
 models = ['yolov8n-pose', 'yolov8s-pose', 'yolov8m-pose', 'yolov8l-pose', 'yolov8x-pose']
-metrics = ['MSE', 'Presnosť PCP', 'Presnosť PCK', 'MPJPE', 'Čas (sekundy)', 'Chýbajúce \n landmarky']
+metrics = ['MSE', 'PCP', 'PCK', 'MPJPE', 'Čas (sekundy)', 'Chýbajúce \n landmarky']
 values = {
-    'yolov8n-pose': [750.71, 100.0, 88.92, 29.84, 12.60, 0.75],
-    'yolov8s-pose': [669.96, 100.0, 89.99, 28.44, 19.82, 0.8],
-    'yolov8m-pose': [572.34, 100.0, 92.46, 25.71, 35.16, 0.75],
-    'yolov8l-pose': [727.32, 100.0, 89.30, 29.21, 60.97, 0.77],
-    'yolov8x-pose': [588.22, 100.0, 91.07, 26.51, 90.14, 0.84]
+    'yolov8n-pose': [750.71, 100.0, 92.54, 29.84, 12.60, 0.75],
+    'yolov8s-pose': [669.96, 100.0, 92.62, 28.44, 19.82, 0.8],
+    'yolov8m-pose': [572.34, 100.0, 93.38, 25.71, 35.16, 0.75],
+    'yolov8l-pose': [727.32, 100.0, 93.15, 29.21, 60.97, 0.77],
+    'yolov8x-pose': [588.22, 100.0, 92.69, 26.51, 90.14, 0.84]
 }
 
 # Define green-blue color palette

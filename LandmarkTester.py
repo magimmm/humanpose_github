@@ -89,7 +89,7 @@ class LandmarkTester():
     def measure_time_mp(self):
         start = time.time()
         mp_pose = mp.solutions.pose
-        pose_image = mp_pose.Pose(static_image_mode=True, min_detection_confidence=0.5)
+        pose_image = mp_pose.Pose(static_image_mode=True, min_detection_confidence=0.5,model_complexity=0)
         # Initialize mediapipe drawing class - to draw the landmarks points.
         mp_drawing = mp.solutions.drawing_utils
         for path in self.images_paths:
@@ -186,11 +186,14 @@ class LandmarkTester():
         for detected_mp_skeleton, detected_y_skeleton, real_mp_skeleton, real_y_skeleton in zip(
                 self.detected_skeletons_mediapipe, self.detected_skeletons_yolo, self.loaded_skeletons_mediapipe,
                 self.loaded_skeletons_yolo):
+
+            diagonal_mp_all=real_mp_skeleton.diagonal_bounding_box
+            diagonal_yolo=real_y_skeleton.diagonal_bounding_box
             percentage_all_mediapipe = self.pck_one_img(detected_mp_skeleton.all_landmarks,
-                                                                real_mp_skeleton.all_landmarks)
+                                                                real_mp_skeleton.all_landmarks,diagonal_mp_all)
             percentage_reduced_mediapipe = self.pck_one_img(detected_mp_skeleton.all_landmarks_as_yolo,
-                                                                    real_mp_skeleton.all_landmarks_as_yolo)
-            percentage_yolo = self.pck_one_img(detected_y_skeleton.all_landmarks, real_y_skeleton.all_landmarks)
+                                                                    real_mp_skeleton.all_landmarks_as_yolo,diagonal_yolo)
+            percentage_yolo = self.pck_one_img(detected_y_skeleton.all_landmarks, real_y_skeleton.all_landmarks,diagonal_yolo)
 
             mp_all += percentage_all_mediapipe
             mp_reduced += percentage_reduced_mediapipe
@@ -202,12 +205,13 @@ class LandmarkTester():
         print('pck: mpreduced, mpall, yolo', mp_reduced*100, mp_all*100, yolo_all*100)
 
 
-    def pck_one_img(self,detected_landmarks, real_landmarks):
+    def pck_one_img(self,detected_landmarks, real_landmarks,diagonal):
         # TODO nezaratavat nulove !
         annotated_array = np.array(real_landmarks)
         detected_array = np.array(detected_landmarks)
 
-        threshold=70
+        threshold=diagonal*0.1
+        #print(threshold)
 
         non_zero_indices = np.all(detected_array != [0, 0], axis=1)
         annotated_non_zero = annotated_array[non_zero_indices]

@@ -22,7 +22,7 @@ class SkeletonDetector():
         self.setup_mediapipe_detector()
         for path in images_paths:
             yolo_detected_landmarks = self.yolo_detector.get_landmarks(path)
-            yolo_skeleton=YoloSkeleton()
+            yolo_skeleton=YoloSkeleton(path)
             yolo_skeleton.setup_from_detector(yolo_detected_landmarks)
             self.detected_skeletons_yolo.append(yolo_skeleton)
 

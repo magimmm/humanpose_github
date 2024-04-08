@@ -4,15 +4,23 @@ import cv2
 model = YOLO('../yolov8n-pose.pt')
 
 # Predict with the model
-results = model(source="Screenshot 2024-02-09 162507.png", show=True, save=True)
+results = model(source='../Photos/neuron_body/train/abnormal/2abnormal_6960_cough.jpg', show=True, save=True)
 #print(results)
 
-img= cv2.imread('../Photos/Screenshot 2024-02-09 162507.png')
+img= cv2.imread('../Photos/neuron_body/train/abnormal/2abnormal_6960_cough.jpg')
 
 print(results[0].keypoints.xy)
 print('nnnnnnnnnnnn')
+l=results[0].keypoints
+box=results[0].boxes[0]
 landmarks = [landmark.cpu().numpy() for landmark in results[0].keypoints.xy]
 landmarks=landmarks[0]
+top_left_x=int(box.xyxy.tolist()[0][0])
+top_left_y=int(box.xyxy.tolist()[0][1])
+bottom_right_y=int(box.xyxy.tolist()[0][2])
+bottom_right_x=int(box.xyxy.tolist()[0][3])
+
+cv2.rectangle(img,(top_left_x,top_left_y),(bottom_right_x,bottom_right_y),(50,200,129),2)
 for landmark in landmarks:
     # Check if the landmark is not null
 

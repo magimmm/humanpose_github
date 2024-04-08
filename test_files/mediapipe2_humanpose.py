@@ -50,12 +50,12 @@ def detectPose(image_pose, pose, draw=False, display=False):
 
 
 # Load the image
-image_path = '../Photos/Screenshot 2024-02-09 162507.png'
+image_path = '../Photos/neuron_body/train/abnormal/2abnormal_6960_cough.jpg'
 image = cv2.imread(image_path)
 
 # Call the detectPose function
 annotated_image, r = detectPose(image, pose_image, draw=True, display=False)
-
+deteced_landmarks = r.pose_landmarks.landmark
 
 cv2.imshow('an',annotated_image)
 cv2.waitKey(0)

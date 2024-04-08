@@ -5,14 +5,19 @@ from MediaPipeDetector import MediaPipeDetector
 from YoloSkeleton import YoloSkeleton
 from MediapipeSkeleton import MediaPipeSkeleton
 class Analyser:
-    def __init__(self,detecotr_type):
-        self.detector_type=detecotr_type
+    def __init__(self,detector_type):
+        self.detector_type=detector_type
         self.threshold=0.55
-        #positive=abnormal
         self.false_positive=0
         self.false_negative=0
         self.true_positive=0
         self.true_negative=0
+        self.detector = cv2.FaceDetectorYN.create("face_detection_yunet_2023mar.onnx", "", (0, 0))
+
+        self.face_cascade_profile = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_profileface.xml')
+
+        self.face_cascade_front = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
         self.abnormal_ranges = [
             (5404, 5455, "cough"),
             (5488, 5540, "scratch"),
@@ -67,6 +72,10 @@ class Analyser:
             skeleton=YoloSkeleton()
             skeleton.setup_from_detector(detected_landmarks)
             skeleton.create_body_nn_feature_vector()
+        else:
+            skeleton = MediaPipeSkeleton()
+            skeleton.setup_from_detector(detected_landmarks)
+            skeleton.create_body_nn_feature_vector()
 
 
         result= self.body_nn_manager.predict_img(skeleton.features_vector)
@@ -102,9 +111,9 @@ class Analyser:
 
             # if frame_count%frame_skip==0:
             if 1:
-                result=self.process_frame(frame)
-
-                self.check_detection(result, frame_count)
+                self.cut_face(frame)
+                # result=self.process_frame(frame)
+          # self.check_detection(result, frame_count)
 
                 # Add text to the frame indicating the frame number
                 # cv2.putText(frame, f'Driver state: {result}', (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
@@ -123,6 +132,48 @@ class Analyser:
         cap.release()
         cv2.destroyAllWindows()
         self.calculate_sensitivity_specificity()
+
+    def cut_face(self,frame):
+        height, width, _ = frame.shape
+
+        self.detector.setInputSize((width, height))
+        _, faces = self.detector.detect(frame)
+
+        # if faces[1] is None, no face found
+
+        if faces is not None:
+            for face in faces:
+                # parameters: x1, y1, w, h, x_re, y_re, x_le, y_le, x_nt, y_nt, x_rcm, y_rcm, x_lcm, y_lcm
+
+                # bouding box
+                box = list(map(int, face[:4]))
+                color = (0, 0, 255)
+                face_img = frame[box[1]:box[1] + box[3], box[0]:box[0] + box[2]]
+                cv2.imwrite(f'face_{i}.jpg', face_img)
+
+
+
+                cv2.rectangle(frame, box, color, 5)
+
+                # confidence
+                confidence = face[-1]
+                confidence = "{:.2f}".format(confidence)
+                position = (box[0], box[1] - 10)
+                cv2.putText(frame, confidence, position, cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 3, cv2.LINE_AA)
+
+
+            cv2.imshow('Profile etected Faces', frame)
+
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+
+        # face_cutout = frame[y:y + h, x:x + w]
+        # cv2.imwrite(output_path, face_cutout)
+        # print("Face cutout saved as:", output_path)
+
+        # Display the image with detected faces
+
+        # Display the image with detected faces
 
 
     def calculate_sensitivity_specificity(self):
