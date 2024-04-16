@@ -1,6 +1,13 @@
 import os
-from LandmarkTester import LandmarkTester
 
+from PIL.Image import Image
+from PIL import Image
+
+from LandmarkTester import LandmarkTester
+import torchvision.transforms as transforms
+from torchvision.datasets import ImageFolder
+from torch.utils.data import DataLoader
+from torch.utils.data.dataset import ConcatDataset
 import cv2
 import torch
 import torchvision
@@ -205,74 +212,44 @@ class CNN():
         # end=time.time()
         # print(end-start)
 
-
     def train_model(self):
-            BATCH_SIZE = 8
-            EPOCHS = 16
-            LR = 0.001
-
-            transform = transforms.Compose([
-                transforms.Resize((80, 80)),  # Resize the images to 80x80
-                transforms.Grayscale(num_output_channels=1),
-                transforms.ToTensor(),
-                transforms.Normalize((0.5), (0.5))
-            ])
-
-            trainset = torchvision.datasets.ImageFolder(root='Photos/neuron_convolution', transform=transform)
-            trainloader = torch.utils.data.DataLoader(trainset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
-            classes = trainset.classes
-
-            model = nn.Sequential(
-                nn.Conv2d(1, 8, 5),
-                nn.ReLU(),
-                nn.Conv2d(8, 16, 5),
-                nn.ReLU(),
-                nn.Flatten(),
-                nn.LazyLinear(120),
-                nn.ReLU(),
-                nn.LazyLinear(84),
-                nn.ReLU(),
-                nn.Linear(84, 4)  # Changed the number of output neurons to 4
-            )
-
-            loss_fun = nn.CrossEntropyLoss()
-            optimizer = optim.SGD(model.parameters(), lr=LR)
-            filename = "cnn_model.pth"
-            for epoch in range(EPOCHS):
-                print("epoch", epoch+1)
-
-                running_loss = 0.0
-                for i, data in enumerate(trainloader, 0):
-                    inputs, labels = data
-                    optimizer.zero_grad()
-                    outputs = model(inputs)
-                    loss = loss_fun(outputs, labels)
-                    loss.backward()
-                    optimizer.step()
-                    running_loss += loss.item()
-                    if i % 20 == 19:
-                        print(f'minibatch: {i+1} loss: {running_loss / 20}')
-                        running_loss = 0
-
-            torch.save(model.state_dict(), filename)
-            print('Finished Training')
-
-    def load_model(self):
+        print('Training')
         BATCH_SIZE = 8
         EPOCHS = 16
         LR = 0.001
 
+        # Define data augmentation transformations
         transform = transforms.Compose([
-            transforms.Resize((80, 80)),  # Resize the images to 80x80
+            transforms.RandomResizedCrop(80, scale=(0.8, 1.0)),  # Randomly crop and resize the image
             transforms.Grayscale(num_output_channels=1),
+            transforms.RandomHorizontalFlip(),  # Randomly flip the image horizontally
+            transforms.RandomRotation(degrees=15),  # Randomly rotate the image by up to 15 degrees
+            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+            # Adjust brightness, contrast, saturation, and hue
             transforms.ToTensor(),
             transforms.Normalize((0.5), (0.5))
         ])
 
-        trainset = torchvision.datasets.ImageFolder(root='Photos/neuron_convolution', transform=transform)
-        trainloader = torch.utils.data.DataLoader(trainset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
-        classes = trainset.classes
+        # Load the original dataset
+        original_dataset = ImageFolder(root='Photos/neuron_convolution', transform=transform)
 
+        # Apply data augmentation to the original dataset
+        augmented_datasets = [original_dataset]
+
+        # Define the number of augmented copies for each original image
+        num_augmented_copies = 4
+
+        for _ in range(num_augmented_copies):
+            augmented_dataset = ImageFolder(root='Photos/neuron_convolution', transform=transform)
+            augmented_datasets.append(augmented_dataset)
+
+        # Concatenate the original and augmented datasets
+        concatenated_dataset = ConcatDataset(augmented_datasets)
+
+        # Create a DataLoader for the concatenated dataset
+        trainloader = DataLoader(concatenated_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
+
+        # Define the neural network model, loss function, and optimizer
         model = nn.Sequential(
             nn.Conv2d(1, 8, 5),
             nn.ReLU(),
@@ -283,17 +260,37 @@ class CNN():
             nn.ReLU(),
             nn.LazyLinear(84),
             nn.ReLU(),
-            nn.Linear(84, 4)  # Changed the number of output neurons to 4
+            nn.Linear(84, 4)
         )
 
         loss_fun = nn.CrossEntropyLoss()
         optimizer = optim.SGD(model.parameters(), lr=LR)
-        filename = "cnn_model.pth"
-        model.load_state_dict(torch.load(filename))
-        model.eval()
-        return model, classes, transform
+
+        # Training loop
+        for epoch in range(EPOCHS):
+            print("epoch", epoch + 1)
+
+            running_loss = 0.0
+            for i, data in enumerate(trainloader, 0):
+                inputs, labels = data
+                optimizer.zero_grad()
+                outputs = model(inputs)
+                loss = loss_fun(outputs, labels)
+                loss.backward()
+                optimizer.step()
+                running_loss += loss.item()
+                if i % 20 == 19:
+                    print(f'minibatch: {i + 1} loss: {running_loss / 20}')
+                    running_loss = 0
+
+        # Save the trained model
+        filename = "cnn_model_aug.pth"
+        torch.save(model.state_dict(), filename)
+        print('Finished Training')
 
     def predict(self,image):
+        image_pil = Image.fromarray(image)
+
         transform = transforms.Compose([
             transforms.Resize((80, 80)),  # Resize the images to 80x80
             transforms.Grayscale(num_output_channels=1),
@@ -302,7 +299,7 @@ class CNN():
         ])
 
         # Preprocess the image
-        image = transform(image).unsqueeze(0)  # Add batch dimension
+        image = transform(image_pil).unsqueeze(0)  # Add batch dimension
 
         # Perform prediction
         with torch.no_grad():
@@ -310,7 +307,9 @@ class CNN():
             _, predicted = torch.max(output, 1)
 
         return predicted.item()
-    def load_model_and_predict(self,model_path):
+
+
+    def load_model(self,model_path):
         # Load the model
         model = nn.Sequential(
             nn.Conv2d(1, 8, 5),
@@ -333,7 +332,7 @@ class CNN():
         # Define the transformation to apply to the image
 
 # train_model()
-cnn=CNN()
+# cnn=CNN()
 # cnn.create_cutouts(normal_path='Photos/all_images/3/normal1', abnormal_path='Photos/all_images/3/abnormal1')
 # cnn.create_cutouts2()
-#cnn.train_model()
+# cnn.train_model()

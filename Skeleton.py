@@ -151,7 +151,7 @@ class Skeleton:
         self.x_max = max(landmark[0] for landmark in landmarks)
         self.y_min = min(landmark[1] for landmark in landmarks)
         self.y_max = max(landmark[1] for landmark in landmarks)
-        print(self.y_max,self.y_min,self.x_max,self.x_min)
+        # print(self.y_max,self.y_min,self.x_max,self.x_min)
 
             # Extract the region of interest (ROI) from the image
 def calculate_distance(point_one,point_two):
