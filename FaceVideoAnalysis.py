@@ -18,7 +18,7 @@ class FaceAnalyser:
         self.opencvcount=0
         self.driver_state_abnormal=False
         self.mp_face_detection = mp.solutions.face_detection
-        self.face_detection = self.mp_face_detection.FaceDetection(min_detection_confidence=0.5)
+        self.face_detection = self.mp_face_detection.FaceDetection(min_detection_confidence=0.1)
         self.frontal_face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         self.profile_face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_profileface.xml')
 
@@ -26,42 +26,29 @@ class FaceAnalyser:
         self.false_negative_body = 0
         self.true_positive_body = 0
         self.true_negative_body = 0
+        self.not_detected=0
 
-        self.y_min = - 40
-        self.y_max = 10
-        self.x_min = - 40
-        self.x_max = 0
+        self.y_min = - 70
+        self.y_max = 70
+        self.x_min = - 70
+        self.x_max = 70
         self.detector = cv2.FaceDetectorYN.create("face_detection_yunet_2023mar.onnx", "", (0, 0))
+        self.ranges = [
+            (5900, 6500, "cough"),
+            (7102, 8300, "cough"),
+            (9990, 10600, "cough"),
+            (12400, 12901, "sneeze"),
+            (12900, 13300, "yawn"),
+            (17200, 17600, "yawn")
+        ]
+
         self.abnormal_ranges = [
-            (5404, 5455, "cough"),
-            (5495, 5540, "scratch"),
-            (5743, 5845, "scratch"),
-            (6125, 6218, "cough"),
-            (6585, 6670, "cough"),
-            (7020, 7070, "cough"),
-            (7902, 8003, "cough"),
-            (8403, 8443, "cough"),
-            (8520, 8701, "scratch"),
-            (8964, 9036, "cough"),
-            (9406, 9510, "cough"),
-            (9674, 9886, "scratch"),
-            (10353, 10466, "cough"),
-            (10666, 10766, "cough"),
-            (11256, 11360, "cough"),
-            (11412, 11515, "cough"),
-            (12271, 12327, "cough"),
-            (12563, 12616, "cough"),
-            (12937, 13123, "yawn"),
-            (13399, 13463, "cough"),
-            (13684, 13950, "scratch"),
-            (14347, 14525, "scratch"),
-            (15060, 15097, "cough"),
-            (15197, 15292, "cough"),
-            (15636, 15700, "cough"),
-            (16275, 16340, "cough"),
-            (16463, 16547, "scratch"),
-            (17105, 17170, "cough"),
-            (17290, 17331, "yawn")
+            (6122, 6214, "cough"),
+            (7895, 7999, "cough"),
+            (10349, 10460, "cough"),
+            (12552, 12614, "sneeze"),
+            (12937, 13118, "yawn"),
+            (17289, 17325, "yawn")
         ]
 
         self.abnormal_ranges_body = [
@@ -105,7 +92,7 @@ class FaceAnalyser:
 
     def setup_model(self):
         self.cnn = CNN()
-        self.cnn.load_model("cnn_model_aug.pth")
+        self.cnn.load_model("cnn_model_mp.pth")
 
     def find_face_mp(self, frame):
         # Convert the frame to RGB for processing with MediaPipe
@@ -120,37 +107,41 @@ class FaceAnalyser:
         else:
             return False
 
-    def find_face_opencv(self, frame):
-        # Convert frame to grayscale
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        # Detect frontal faces
-        frontal_faces = self.frontal_face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
-
-        # Detect profile faces
-        profile_faces = self.profile_face_cascade.detectMultiScale(gray, scaleFactor=1.3, minNeighbors=5)
-
-        # Return True if any face (frontal or profile) is detected
-        if len(frontal_faces) > 0 or len(profile_faces) > 0:
-            return True
-        else:
-            return False
     def process_frame(self,frame):
         yolo_detected_landmarks = self.yolo_detector.get_landmarks(frame)
         yolo_skeleton = YoloSkeleton()
         yolo_skeleton.setup_from_detector(yolo_detected_landmarks)
         yolo_skeleton.find_face()
-        crop_region = frame[yolo_skeleton.y_min + self.y_min:yolo_skeleton.y_max + self.y_max,
-                      yolo_skeleton.x_min + self.x_min:yolo_skeleton.x_max + self.x_max]
 
+        crop_region = frame[max(0, yolo_skeleton.y_min + self.y_min):yolo_skeleton.y_max + self.y_max,
+                      max(0, yolo_skeleton.x_min) + self.x_min:yolo_skeleton.x_max + self.x_max]
+
+        image_rgb = cv2.cvtColor(crop_region, cv2.COLOR_BGR2RGB)
+
+        # Process the image
+        results = self.face_detection.process(image_rgb)
+
+        # Check if at least one face is detected
+        if results.detections:
+            # Only process the first detected face
+            detection = results.detections[0]
+            bboxC = detection.location_data.relative_bounding_box
+            ih, iw, _ = frame.shape
+            bbox = int(bboxC.xmin * iw), int(bboxC.ymin * ih), \
+                int(bboxC.width * iw), int(bboxC.height * ih)
+
+            # Crop the detected face
+            face_crop = crop_region[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2]]
+            # print(f"Face detected and saved successfully: {save_path}")
+        else:
+            self.not_detected+=1
+            return None
         # save_path = os.path.join("Photos", "cutouts", "normal2", filename)
         # cv2.imwrite(save_path, crop_region)
 
 
-        result= self.cnn.predict(crop_region)
-
-
-
+        result= self.cnn.predict(face_crop)
         return result
 
     def run(self):
@@ -168,9 +159,12 @@ class FaceAnalyser:
             print("Error: Could not open video.")
             exit()
 
+        # frame_count=5400
         frame_count=5400
+        self.total_count=0
         # frame_skip=0
         cap.set(cv2.CAP_PROP_POS_FRAMES, 5400)
+        # cap.set(cv2.CAP_PROP_POS_FRAMES, 5400)
         # Process each frame
         while True:
             ret, frame = cap.read()
@@ -179,30 +173,26 @@ class FaceAnalyser:
                 break
 
             # if frame_count%frame_skip==0:
-            if 1:
-                if self.find_face_mp(frame):
-                    self.mp_count+=1
-                if self.find_face_opencv(frame):
-                    self.opencvcount+=1
-    #---------------------------
-                # result=self.process_frame(frame)
-                # print(result, frame_count)
-                #
-                # if result==0:
-                #     state='abnormal'
-                # elif result==1:
-                #     state='left'
-                # elif result==2:
-                #     state='normal'
-                # else:
-                #     state='right'
-                #
-                #
-                # if result>0:
-                #     one_frame_state_abnormal=False
-                # else:
-                #     one_frame_state_abnormal=True
-                #
+
+            result=self.process_frame(frame)
+            print(result, frame_count)
+
+            # if result==0:
+            #     state='abnormal'
+            # elif result==1:
+            #     state='left'
+            # elif result==2:
+            #     state='normal'
+            # else:
+            #     state='right'
+
+            if result:
+                if result>0:
+                    one_frame_state_abnormal=False
+                else:
+                    one_frame_state_abnormal=True
+
+#odkomentuj pre frames check
                 # self.last_states.append(one_frame_state_abnormal)
                 #
                 # # If the list of last states exceeds 5, remove the oldest state
@@ -212,31 +202,15 @@ class FaceAnalyser:
                 # if len(set(self.last_states)) == 1:
                 #     # If all states are the same, return this common state
                 #     self.driver_state_abnormal=one_frame_state_abnormal
-                #
                 # self.check_detection(self.driver_state_abnormal, frame_count)
-                #
-                #
-                #
+
+
+
+                self.check_detection(one_frame_state_abnormal, frame_count)
+
+            frame_count += 1
+
                 # cv2.putText(frame, f'Driver state: {state}', (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-                #
-                #
-
-#----------------------------------
-
-
-
-
-                # Display the frame
-                # cv2.imshow('Video', frame)
-                # if cv2.waitKey(5) & 0xFF == ord('q'):
-                #     break
-
-                # result=self.process_frame(frame)
-
-
-                # Add text to the frame indicating the frame number
-                # cv2.putText(frame, f'Driver state: {result}', (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-                #
                 # # Display the frame
                 # cv2.imshow('Video', frame)
                 #
@@ -244,17 +218,10 @@ class FaceAnalyser:
                 # if cv2.waitKey(5) & 0xFF == ord('q'):
                 #     break
 
-            frame_count+=1
-
-
-        print(frame_count-5400)
-        print('mp',self.mp_count, self.mp_count/frame_count-5400)
-        print('opencv',self.opencvcount, self.opencvcount/frame_count-5400)
-        # Release the video capture object and close all windows
+        print(self.total_count)
         cap.release()
         cv2.destroyAllWindows()
         self.calculate_sensitivity_specificity()
-
 
 
     def calculate_sensitivity_specificity(self):
@@ -275,11 +242,44 @@ class FaceAnalyser:
         print("Sensitivity:", self.sensitivity2)
         print("Accuracy:", self.accuracy2)
 
-    def check_detection(self,abnormal,frame_count):
-        abnormal_real_state=False
-        for start, end, action in self.abnormal_ranges:
+    def check_detection_select(self, abnormal, frame_count):
+        for start, end, action in self.ranges:
             if start <= frame_count <= end:
-                abnormal_real_state = True
+                # cv2.imwrite('Photos/testra/'+str(frame_count)+'.jpg',frame)
+                self.total_count += 1
+                abnormal_real_state = False
+                for start, end, action in self.abnormal_ranges:
+                    if start <= frame_count <= end:
+                        abnormal_real_state = True
+
+                # bol vyhodnoteny ako abnormal
+                if abnormal:
+                    # a aj je abnormal
+                    if abnormal_real_state:
+                        self.true_positive += 1
+                        # print('true positive',frame_count)
+                    # ale je normal- takze bol zle ako pozitiv
+                    else:
+                        # pr\int('false postive ',frame_count)
+                        # cv2.imwrite('Photos/false_positive/'+str(frame_count)+'.jpg',frame)
+
+                        self.false_positive += 1
+
+                # bol vyhodnoteny ako normalny
+                else:
+                    # ale v skutocnosti nie je
+                    if abnormal_real_state:
+                        self.false_negative += 1
+                        # print('false negative  ',frame_count)
+                        # cv2.imwrite('Photos/false_negative/'+str(frame_count)+'.jpg',frame)
+
+                    else:
+                        self.true_negative += 1
+                        # print('true negative',frame_count)
+
+
+
+    def check_detection(self,abnormal,frame_count):
 
         abnormal_real_state_body = False
         for start, end, action in self.abnormal_ranges_body:
@@ -289,15 +289,7 @@ class FaceAnalyser:
         #bol vyhodnoteny ako abnormal
         if abnormal:
             #a aj je abnormal
-            if abnormal_real_state:
-                self.true_positive += 1
-                # print('true positive',frame_count)
-            #ale je normal- takze bol zle ako pozitiv
-            else:
-                # pr\int('false postive ',frame_count)
-                # cv2.imwrite('Photos/false_positive/'+str(frame_count)+'.jpg',frame)
 
-                self.false_positive+=1
             if abnormal_real_state_body:
                 self.true_positive_body+=1
             else:
@@ -305,14 +297,6 @@ class FaceAnalyser:
         # bol vyhodnoteny ako normalny
         else:
             #ale v skutocnosti nie je
-            if abnormal_real_state:
-                self.false_negative+=1
-                # print('false negative  ',frame_count)
-                # cv2.imwrite('Photos/false_negative/'+str(frame_count)+'.jpg',frame)
-
-            else:
-                self.true_negative+=1
-                # print('true negative',frame_count)
 
             if abnormal_real_state_body:
                 self.false_negative_body+=1
