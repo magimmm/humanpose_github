@@ -1,11 +1,10 @@
 import cv2
-from BodyNeuronNetwork import NeuronNetworkManager
 from YoloDetector import YoloDetector
-from MediaPipeDetector import MediaPipeDetector
 from YoloSkeleton import YoloSkeleton
-from MediapipeSkeleton import MediaPipeSkeleton
 import mediapipe as mp
 from cnn import CNN
+from BodyNeuronNetwork import NeuronNetworkManager
+
 class FaceAnalyser:
     def __init__(self,model_path,using_mp,show,noise_correction,test_seq):
         self.test_seq=test_seq
@@ -347,8 +346,8 @@ class FaceAnalyser:
 # print('cnn_model_v_8_25_2.pth')
 # fvideo=FaceAnalyser("cnn_model_v_8_25_2.pth",using_mp=False,show=False,noise_correction=False,test_seq=False)
 # fvideo.run()
-print('cnn_model_v_8_20_aug.pth')
-fvideo=FaceAnalyser('cnn_model_v_8_20_2_aug.pth',using_mp=False,show=False,noise_correction=True,test_seq=True)
+print('cnn_model_v_8_16_2.pth')
+fvideo=FaceAnalyser("cnn_model_v_8_16_2.pth",using_mp=False,show=False,noise_correction=False,test_seq=False)
 fvideo.run()
 #
 # print('cnn_model_v_8_50_2.pth')

@@ -1,58 +1,48 @@
-# TODO 1. urobit vyrezy z celeho videa a konvolucnu siet  urobit viac stavov:
-#  vytocena hlava, vpravo,vlavo, abnormal vseobecne a normal
-# potom zakazdym urobit vyrez tvare a spracovat ho  a poslat to tam
-#mozno ze kam sa pozera -vzdialenost medzi uchom a okom
-#  potom urobit mozno nejaku dalsiu funkciu ktora zoberie to cislo z body  a z face a vyhodnoti
-# mozno pretrenovat siet a pridat viac obrazkov ked dava mobil do kapsy
-import os
 
 from PIL.Image import Image
 from PIL import Image
 
-from LandmarkTester import LandmarkTester
+import cv2
+
+import torch
 import torchvision.transforms as transforms
 from torchvision.datasets import ImageFolder
 from torch.utils.data import DataLoader
-from torch.utils.data.dataset import ConcatDataset
-import cv2
-import torch
-import torchvision
-import torchvision.transforms as transforms
 import torch.nn as nn
 import torch.optim as optim
-import mediapipe as mp
-import time
-import glob
-import torchvision.models as models
-import numpy as np
 
-from SkeletonDetector import SkeletonDetector
-from YoloDetector import YoloDetector
-from YoloSkeleton import YoloSkeleton
-
-
-class CNN():
+class CNN:
     def __init__(self):
-        self.detector = cv2.FaceDetectorYN.create("face_detection_yunet_2023mar.onnx", "", (0, 0))
-        self.missed_abnormal=0
-        self.misssed_normal=0
-        self.missed=0
+        self.model = None
 
     def train_model(self):
         print('Training')
-        BATCH_SIZE = 32
+        BATCH_SIZE = 16
         EPOCHS = 50
         LR = 0.001
 
+        # Define data transformations for "abnormal" subfolder with augmentation
         transform = transforms.Compose([
+            transforms.Resize((80, 80)),  # Resize the images to 80x80
+            transforms.Grayscale(num_output_channels=1),
+            transforms.RandomRotation(degrees=5),  # Random rotation within -10 to +10 degrees
+            transforms.RandomAutocontrast(0.7),
+            # transforms.RandomResizedCrop(size=(80, 80), scale=(0.8, 1.2)),  # Random resized crop
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,))
+        ])
+
+        # Define data transformations for "normal" subfolder without augmentation
+        transform_normal = transforms.Compose([
             transforms.Resize((80, 80)),  # Resize the images to 80x80
             transforms.Grayscale(num_output_channels=1),
             transforms.ToTensor(),
             transforms.Normalize((0.5,), (0.5,))
         ])
 
-        # Load the original dataset
-        dataset = ImageFolder(root='Photos/neuron_convolution', transform=transform)
+        # Load the original dataset with augmentation only for "abnormal" subfolder
+        # Load the original dataset with augmentation
+        dataset = ImageFolder(root='Photos/neuron_convolution_binary', transform=transform)
 
         # Create a DataLoader for the dataset
         trainloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
@@ -68,7 +58,7 @@ class CNN():
             nn.ReLU(),
             nn.LazyLinear(84),
             nn.ReLU(),
-            nn.Linear(84, 4)
+            nn.Linear(84, 2)  # Changed the number of output neurons to 2
         )
 
         loss_fun = nn.CrossEntropyLoss()
@@ -92,7 +82,7 @@ class CNN():
                     running_loss = 0
 
         # Save the trained model
-        filename = "cnn_model_mp_aug.pth"
+        filename = "cnn_model_binary_aug.pth"
         torch.save(model.state_dict(), filename)
         print('Finished Training')
 
@@ -110,19 +100,13 @@ class CNN():
         image = transform(image_pil).unsqueeze(0)  # Add batch dimension
 
         # Perform prediction
-        # with torch.no_grad():
-        #     output = self.model(image)
-        #     _, predicted = torch.max(output, 1)
-        #
-        # return predicted.item()
-
         with torch.no_grad():
             output = self.model(image)
             probabilities = torch.softmax(output, dim=1)
 
         predicted_class_index = torch.argmax(probabilities)
 
-        return probabilities.squeeze().tolist(),predicted_class_index
+        return probabilities.squeeze().tolist(), predicted_class_index
 
     def load_model(self,model_path):
         # Load the model
@@ -136,7 +120,7 @@ class CNN():
             nn.ReLU(),
             nn.LazyLinear(84),
             nn.ReLU(),
-            nn.Linear(84, 4)  # Changed the number of output neurons to 4
+            nn.Linear(84, 2)  # Changed the number of output neurons to 2
         )
 
         # Load the trained weights
@@ -146,9 +130,10 @@ class CNN():
 
         # Define the transformation to apply to the image
 
+
 # train_model()
 # cnn=CNN()
 # cnn.create_cutouts(normal_path='Photos/all_images/3/normal1', abnormal_path='Photos/all_images/3/abnormal1')
-# cnn.create_cutouts2()
+# # cnn.create_cutouts2()
 # cnn=CNN()
 # cnn.train_model()

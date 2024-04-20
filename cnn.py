@@ -32,21 +32,34 @@ class CNN():
         self.misssed_normal=0
         self.missed=0
 
-    def train_model(self):
+    def train_model_4_class(self,folder_path,model_name,augument,batch,epoch,lr):
         print('Training')
-        BATCH_SIZE = 8
-        EPOCHS = 16
-        LR = 0.001
+        BATCH_SIZE = batch
+        EPOCHS = epoch
+        LR = lr
 
-        transform = transforms.Compose([
-            transforms.Resize((80, 80)),  # Resize the images to 80x80
-            transforms.Grayscale(num_output_channels=1),
-            transforms.ToTensor(),
-            transforms.Normalize((0.5,), (0.5,))
-        ])
+        if augument:
+            transform = transforms.Compose([
+                transforms.Resize((80, 80)),  # Resize the images to 80x80
+                transforms.Grayscale(num_output_channels=1),
+                transforms.RandomRotation(degrees=5),  # Random rotation within -10 to +10 degrees
+                transforms.RandomAutocontrast(0.7),
+                # transforms.RandomResizedCrop(size=(80, 80), scale=(0.8, 1.2)),  # Random resized crop
+                transforms.ToTensor(),
+                transforms.Normalize((0.5,), (0.5,))
+            ])
+        else:
+            # Define data transformations for "normal" subfolder without augmentation
+            transform= transforms.Compose([
+                transforms.Resize((80, 80)),  # Resize the images to 80x80
+                transforms.Grayscale(num_output_channels=1),
+                transforms.ToTensor(),
+                transforms.Normalize((0.5,), (0.5,))
+            ])
 
-        # Load the original dataset
-        dataset = ImageFolder(root='Photos/neuron_convolution', transform=transform)
+        # Load the original dataset with augmentation only for "abnormal" subfolder
+        # Load the original dataset with augmentation
+        dataset = ImageFolder(root=folder_path, transform=transform)
 
         # Create a DataLoader for the dataset
         trainloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
@@ -86,7 +99,7 @@ class CNN():
                     running_loss = 0
 
         # Save the trained model
-        filename = "cnn_model_mp2.pth"
+        filename = model_name
         torch.save(model.state_dict(), filename)
         print('Finished Training')
 
@@ -103,13 +116,19 @@ class CNN():
         # Preprocess the image
         image = transform(image_pil).unsqueeze(0)  # Add batch dimension
 
-        # Perform prediction
         with torch.no_grad():
             output = self.model(image)
             _, predicted = torch.max(output, 1)
 
         return predicted.item()
 
+        # with torch.no_grad():
+        #     output = self.model(image)
+        #     probabilities = torch.softmax(output, dim=1)
+        #
+        # predicted_class_index = torch.argmax(probabilities)
+        #
+        # return probabilities.squeeze().tolist(),predicted_class_index
 
     def load_model(self,model_path):
         # Load the model
@@ -133,8 +152,5 @@ class CNN():
 
         # Define the transformation to apply to the image
 
-# train_model()
-cnn=CNN()
-# cnn.create_cutouts(normal_path='Photos/all_images/3/normal1', abnormal_path='Photos/all_images/3/abnormal1')
-# cnn.create_cutouts2()
-cnn.train_model()
+
+
