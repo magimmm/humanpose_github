@@ -1,14 +1,30 @@
 from Skeleton import Skeleton
+
+
 class MediaPipeSkeleton(Skeleton):
     """
-mediapipe skeleton for images
+      A class representing a skeleton detected using the MediaPipe library.
     """
 
     def __init__(self):
         super().__init__()
-        self.type='mediapipe'
-        self.missing_landmarks_indexes_as_yolo=[]
-    def setup_from_detector(self,detected_landmarks):
+        self.mouth_left = None
+        self.right_eye_outer = None
+        self.left_eye_outer = None
+        self.mouth_right = None
+        self.left_eye_inner = None
+        self.right_eye_inner = None
+        self.right_eye_inner = None
+        self.type = 'mediapipe'
+        self.missing_landmarks_indexes_as_yolo = []
+
+    def setup_from_detector(self, detected_landmarks):
+        """
+           Set up the skeleton based on detected landmarks from a detector.
+
+           Args:
+               detected_landmarks (list): Detected landmarks from a detector.
+       """
         self.nose = detected_landmarks[0]
         self.left_eye_inner = detected_landmarks[1]
         self.left_eye = detected_landmarks[2]
@@ -37,7 +53,14 @@ mediapipe skeleton for images
 
         self.setup_all_landmarks()
 
-    def setup_from_annotation_file(self,keypoints, path):
+    def setup_from_annotation_file(self, keypoints, path):
+        """
+           Set up the skeleton based on annotated key-points from a file.
+
+           Args:
+               keypoints (list): Annotated key-points from a file.
+               path (str): Path to the annotation file.
+       """
         self.nose = (keypoints[0], keypoints[1])
         self.right_eye_inner = (keypoints[3], keypoints[4])
         self.right_eye = (keypoints[6], keypoints[7])
@@ -66,8 +89,10 @@ mediapipe skeleton for images
         self.path = path
         self.setup_all_landmarks()
 
-
     def setup_all_landmarks(self):
+        """
+          Set up all landmarks and body parts.
+        """
         self.all_landmarks = [self.nose, self.right_eye_inner, self.right_eye, self.right_eye_outer,
                               self.left_eye_inner,
                               self.left_eye, self.left_eye_outer, self.right_ear, self.left_ear, self.mouth_right,
@@ -84,7 +109,9 @@ mediapipe skeleton for images
                      self.right_hip, self.left_hip]
 
     def find_missing_points_as_yolo(self):
+        """
+            Find missing landmarks from  using YOLO format (missing landmarks from these 13).
+        """
         for i, landmark in enumerate(self.all_landmarks_as_yolo):
             if landmark == [0, 0]:
                 self.missing_landmarks_indexes_as_yolo.append(i)
-

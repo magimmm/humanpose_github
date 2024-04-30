@@ -1,14 +1,17 @@
 from Skeleton import Skeleton
+
+
 class YoloSkeleton(Skeleton):
     """
 yolo skeleton of images
     """
 
-    def __init__(self,path=None):
+    def __init__(self, path=None):
         super().__init__()
         self.model_type = 'yolo'
-        self.path=path
-    def setup_from_detector(self,detected_landmarks):
+        self.path = path
+
+    def setup_from_detector(self, detected_landmarks):
         self.nose = detected_landmarks[0]
         self.left_eye = detected_landmarks[1]
         self.right_eye = detected_landmarks[2]
@@ -24,7 +27,7 @@ yolo skeleton of images
         self.right_hip = detected_landmarks[12]
         self.setup_all_landmarks()
 
-    def setup_from_annotation_file(self,keypoints,path):
+    def setup_from_annotation_file(self, keypoints, path):
         self.nose = (keypoints[0], keypoints[1])
         self.right_eye = (keypoints[6], keypoints[7])
         self.left_eye = (keypoints[15], keypoints[16])
@@ -40,6 +43,7 @@ yolo skeleton of images
         self.left_hip = (keypoints[72], keypoints[73])
         self.path = path
         self.setup_all_landmarks()
+
     def setup_all_landmarks(self):
         self.all_landmarks = [self.nose,
                               self.left_eye,
@@ -63,9 +67,3 @@ yolo skeleton of images
             self.right_wrist,
             self.left_hip,
             self.right_hip]
-
-
-
-
-
-

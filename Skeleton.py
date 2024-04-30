@@ -1,5 +1,10 @@
 import math
+
+
 class Skeleton:
+    """
+    Class representing a skeleton detected or annotated in an image.
+    """
     def __init__(self):
         self.left_wrist_to_elbow = None
         self.right_elbow_to_shoulder = None
@@ -25,9 +30,9 @@ class Skeleton:
         self.path = None
         self.all_landmarks = []
         self.body = []
-        self.limbs=[]
-        self.limbs_indexes_in_body_list=[]
-        self.missing_landmarks_indexes=[]
+        self.limbs = []
+        self.limbs_indexes_in_body_list = []
+        self.missing_landmarks_indexes = []
 
     def setup_from_detector(self, detected_landmarks):
         pass
@@ -51,11 +56,17 @@ class Skeleton:
         pass
 
     def find_missing_points(self):
+        """
+        Find missing landmarks in the skeleton.
+        """
         for i, landmark in enumerate(self.all_landmarks):
             if landmark == [0, 0]:
                 self.missing_landmarks_indexes.append(i)
 
     def calculate_limbs_distances(self):
+        """
+        Calculate distances between different limbs of the skeleton.
+        """
         self.right_wrist_to_elbow = calculate_distance(self.right_wrist, self.right_elbow)
         self.right_elbow_to_shoulder = calculate_distance(self.right_elbow, self.right_shoulder)
         self.right_wrist_to_shoulder = calculate_distance(self.right_wrist, self.right_shoulder)
@@ -66,66 +77,64 @@ class Skeleton:
         self.left_hip_to_shoulder = calculate_distance(self.left_hip, self.left_shoulder)
         self.hip_to_hip = calculate_distance(self.left_hip, self.right_hip)
         self.shoulder_to_shoulder = calculate_distance(self.right_shoulder, self.left_shoulder)
-        self.wrist_to_wrist=calculate_distance(self.right_wrist,self.left_wrist)
-        self.elbow_to_elbow=calculate_distance(self.right_elbow,self.left_elbow)
-        self.right_wrist_hip=calculate_distance(self.right_wrist,self.right_hip)
-        self.left_wrist_hip=calculate_distance(self.left_wrist,self.left_hip)
-        self.right_wrist_left_hip=calculate_distance(self.right_wrist,self.left_hip)
-        self.left_wrist_right_hip=calculate_distance(self.left_wrist,self.right_hip)
-        self.right_wrist_left_shoulder=calculate_distance(self.right_wrist,self.left_shoulder)
-        self.left_wrist_right_shoulder=calculate_distance(self.left_wrist,self.right_shoulder)
+        self.wrist_to_wrist = calculate_distance(self.right_wrist, self.left_wrist)
+        self.elbow_to_elbow = calculate_distance(self.right_elbow, self.left_elbow)
+        self.right_wrist_hip = calculate_distance(self.right_wrist, self.right_hip)
+        self.left_wrist_hip = calculate_distance(self.left_wrist, self.left_hip)
+        self.right_wrist_left_hip = calculate_distance(self.right_wrist, self.left_hip)
+        self.left_wrist_right_hip = calculate_distance(self.left_wrist, self.right_hip)
+        self.right_wrist_left_shoulder = calculate_distance(self.right_wrist, self.left_shoulder)
+        self.left_wrist_right_shoulder = calculate_distance(self.left_wrist, self.right_shoulder)
 
-        self.limbs=[self.right_wrist_to_elbow,
-                    self.right_elbow_to_shoulder,
-                    self.left_wrist_to_elbow,
-                    self.left_elbow_to_shoulder,
-                    self.right_hip_to_shoulder,
-                    self.left_hip_to_shoulder,
-                    self.hip_to_hip,
-                    self.shoulder_to_shoulder]
-        self.limbs_indexes_in_body_list = [[10,8],[8,6],[9,7],[7,5],[12,6],[11,5],[11,12],[5,6]]
+        self.limbs = [self.right_wrist_to_elbow,
+                      self.right_elbow_to_shoulder,
+                      self.left_wrist_to_elbow,
+                      self.left_elbow_to_shoulder,
+                      self.right_hip_to_shoulder,
+                      self.left_hip_to_shoulder,
+                      self.hip_to_hip,
+                      self.shoulder_to_shoulder]
+        self.limbs_indexes_in_body_list = [[10, 8], [8, 6], [9, 7], [7, 5], [12, 6], [11, 5], [11, 12], [5, 6]]
+
     def create_body_nn_feature_vector(self):
+        """
+        Create a feature vector for the body.
+        """
         self.calculate_limbs_distances()
-        self.features_vector=[self.right_wrist_to_elbow,
-                              self.right_elbow_to_shoulder,
-                              self.right_wrist_to_shoulder,
-                             self.left_wrist_to_elbow,
-                              self.left_elbow_to_shoulder,
-                              self.left_wrist_to_shoulder,
-                              self.right_hip_to_shoulder,
-                              self.left_hip_to_shoulder,
-                            self.wrist_to_wrist,
-                            self.elbow_to_elbow,
-                            self.right_wrist_hip,
-                            self.left_wrist_hip,
-                            self.right_wrist_left_hip,
-                            self.left_wrist_right_hip,
-                              self.right_wrist_left_shoulder,
-                              self.left_wrist_right_shoulder]
-
-    def create_body_nn_feature_vector_whole_body(self):
-        self.features_vector_whole_body = []
-        for index, keypoint in enumerate(self.body):
-            if index < len(self.body) - 1:
-                distance = calculate_distance(keypoint, self.body[index + 1])
-                self.features_vector_whole_body.append(distance)
-
+        self.features_vector = [self.right_wrist_to_elbow,
+                                self.right_elbow_to_shoulder,
+                                self.right_wrist_to_shoulder,
+                                self.left_wrist_to_elbow,
+                                self.left_elbow_to_shoulder,
+                                self.left_wrist_to_shoulder,
+                                self.right_hip_to_shoulder,
+                                self.left_hip_to_shoulder,
+                                self.wrist_to_wrist,
+                                self.elbow_to_elbow,
+                                self.right_wrist_hip,
+                                self.left_wrist_hip,
+                                self.right_wrist_left_hip,
+                                self.left_wrist_right_hip,
+                                self.right_wrist_left_shoulder,
+                                self.left_wrist_right_shoulder]
     def find_bounding_box(self):
+        """
+        Find the bounding box of the skeleton.
+        """
         x_min = min(landmark[0] for landmark in self.all_landmarks)
         y_min = min(landmark[1] for landmark in self.all_landmarks)
         x_max = max(landmark[0] for landmark in self.all_landmarks)
         y_max = max(landmark[1] for landmark in self.all_landmarks)
 
-        top_left=[x_min,y_min]
-        bottom_right=[x_max,y_max]
-        self.diagonal_bounding_box = math.sqrt((x_max - x_min)**2 + (y_max - y_min)**2)
-
+        self.diagonal_bounding_box = math.sqrt((x_max - x_min) ** 2 + (y_max - y_min) ** 2)
 
     def preprocess_for_comparing(self):
+        """
+        Preprocess the skeleton for comparison.
+        """
         self.calculate_limbs_distances()
         self.find_missing_points()
         self.create_body_nn_feature_vector()
-        self.create_body_nn_feature_vector_whole_body()
         self.find_bounding_box()
 
         self.all_landmarks_as_yolo = [self.nose,
@@ -143,18 +152,31 @@ class Skeleton:
                                       self.right_hip]
 
     def find_face(self):
+        """
+        Find the face region of the skeleton.
+        """
         landmarks = [landmark for landmark in
-                     [self.nose, self.left_eye, self.right_eye, self.left_ear, self.right_ear, self.left_shoulder, self.right_shoulder] if landmark != [0, 0]]
+                     [self.nose, self.left_eye, self.right_eye, self.left_ear, self.right_ear, self.left_shoulder,
+                      self.right_shoulder] if landmark != [0, 0]]
 
-            # Calculate minimum and maximum coordinates using valid landmarks
+        # Calculate minimum and maximum coordinates using valid landmarks
         self.x_min = min(landmark[0] for landmark in landmarks)
         self.x_max = max(landmark[0] for landmark in landmarks)
         self.y_min = min(landmark[1] for landmark in landmarks)
         self.y_max = max(landmark[1] for landmark in landmarks)
-        # print(self.y_max,self.y_min,self.x_max,self.x_min)
 
-            # Extract the region of interest (ROI) from the image
-def calculate_distance(point_one,point_two):
-    x1,y1=point_one[0],point_one[1]
-    x2,y2=point_two[0],point_two[1]
-    return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+
+def calculate_distance(point_one, point_two):
+    """
+    Calculate the Euclidean distance between two points.
+
+    Args:
+        point_one (tuple): Coordinates of the first point.
+        point_two (tuple): Coordinates of the second point.
+
+    Returns:
+        float: Euclidean distance between the two points.
+    """
+    x1, y1 = point_one[0], point_one[1]
+    x2, y2 = point_two[0], point_two[1]
+    return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)

@@ -1,38 +1,31 @@
-import os
-
 from PIL.Image import Image
 from PIL import Image
-
-from LandmarkTester import LandmarkTester
-import torchvision.transforms as transforms
 from torchvision.datasets import ImageFolder
 from torch.utils.data import DataLoader
-from torch.utils.data.dataset import ConcatDataset
-import cv2
 import torch
-import torchvision
 import torchvision.transforms as transforms
 import torch.nn as nn
 import torch.optim as optim
-import mediapipe as mp
-import time
-import glob
-import torchvision.models as models
-import numpy as np
-
-from SkeletonDetector import SkeletonDetector
-from YoloDetector import YoloDetector
-from YoloSkeleton import YoloSkeleton
 
 
 class CNN():
     def __init__(self):
-        self.detector = cv2.FaceDetectorYN.create("face_detection_yunet_2023mar.onnx", "", (0, 0))
-        self.missed_abnormal=0
-        self.misssed_normal=0
-        self.missed=0
+        self.missed_abnormal = 0
+        self.misssed_normal = 0
+        self.missed = 0
 
-    def train_model_4_class(self,folder_path,model_name,augument,batch,epoch,lr):
+    def train_model_4_class(self, folder_path, model_name, augument, batch, epoch, lr):
+        """
+           Train a convolutional neural network for a 4-class classification task.
+
+           Args:
+               folder_path (str): Path to the folder containing the dataset.
+               model_name (str): Name of the trained model file to be saved.
+               augument (bool): Whether to apply data augmentation.
+               batch (int): Batch size for training.
+               epoch (int): Number of epochs for training.
+               lr (float): Learning rate for the optimizer.
+        """
         print('Training')
         BATCH_SIZE = batch
         EPOCHS = epoch
@@ -44,21 +37,17 @@ class CNN():
                 transforms.Grayscale(num_output_channels=1),
                 transforms.RandomRotation(degrees=5),  # Random rotation within -10 to +10 degrees
                 transforms.RandomAutocontrast(0.7),
-                # transforms.RandomResizedCrop(size=(80, 80), scale=(0.8, 1.2)),  # Random resized crop
                 transforms.ToTensor(),
                 transforms.Normalize((0.5,), (0.5,))
             ])
         else:
-            # Define data transformations for "normal" subfolder without augmentation
-            transform= transforms.Compose([
+            transform = transforms.Compose([
                 transforms.Resize((80, 80)),  # Resize the images to 80x80
                 transforms.Grayscale(num_output_channels=1),
                 transforms.ToTensor(),
                 transforms.Normalize((0.5,), (0.5,))
             ])
 
-        # Load the original dataset with augmentation only for "abnormal" subfolder
-        # Load the original dataset with augmentation
         dataset = ImageFolder(root=folder_path, transform=transform)
 
         # Create a DataLoader for the dataset
@@ -103,7 +92,16 @@ class CNN():
         torch.save(model.state_dict(), filename)
         print('Finished Training')
 
-    def predict(self,image):
+    def predict(self, image):
+        """
+            Make a prediction for a single image.
+
+            Args:
+                image (numpy.ndarray): Input image array.
+
+            Returns:
+                int: Predicted class index.
+        """
         image_pil = Image.fromarray(image)
 
         transform = transforms.Compose([
@@ -121,16 +119,16 @@ class CNN():
             _, predicted = torch.max(output, 1)
 
         return predicted.item()
-
-        # with torch.no_grad():
-        #     output = self.model(image)
-        #     probabilities = torch.softmax(output, dim=1)
-        #
-        # predicted_class_index = torch.argmax(probabilities)
-        #
-        # return probabilities.squeeze().tolist(),predicted_class_index
-
     def predict_probs(self, image):
+        """
+        Make a prediction with probability outputs for a single image.
+
+        Args:
+            image (numpy.ndarray): Input image array.
+
+        Returns:
+            Tuple[int, numpy.ndarray]: Predicted class index and class probabilities.
+        """
         image_pil = Image.fromarray(image)
 
         transform = transforms.Compose([
@@ -150,8 +148,13 @@ class CNN():
 
         return predicted.item(), probabilities.squeeze().numpy()  # Return predicted class label and probabilities
 
-    def load_model(self,model_path):
-        # Load the model
+    def load_model(self, model_path):
+        """
+        Load a pre-trained convolutional neural network model.
+
+        Args:
+            model_path (str): Path to the saved model file.
+        """
         model = nn.Sequential(
             nn.Conv2d(1, 8, 5),
             nn.ReLU(),
@@ -162,15 +165,10 @@ class CNN():
             nn.ReLU(),
             nn.LazyLinear(84),
             nn.ReLU(),
-            nn.Linear(84, 4)  # Changed the number of output neurons to 4
+            nn.Linear(84, 4)
         )
 
         # Load the trained weights
         model.load_state_dict(torch.load(model_path))
         model.eval()  # Set the model to evaluation mode
-        self.model=model
-
-        # Define the transformation to apply to the image
-
-
-
+        self.model = model

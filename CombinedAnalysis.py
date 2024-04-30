@@ -181,7 +181,7 @@ class StateAnalyser:
         self.last_states_body.append(self.one_frame_body_state_abnormal)
 
         # If the list of last states exceeds 5, remove the oldest state
-        if len(self.last_states_body) > self.noise:
+        if len(self.last_states_body) > 3:
             self.last_states_body.pop(0)
 
         if len(set(self.last_states_body)) == 1:
@@ -200,7 +200,7 @@ class StateAnalyser:
             self.driver_state_abnormal_face = self.one_frame_face_state_abnormal
 
     def combine_states(self):
-        if ((self.driver_state_abnormal_face and self.face_predict_probabilities[0]>0.9)or (self.driver_state_abnormal_body)):
+        if (self.driver_state_abnormal_face )or (self.driver_state_abnormal_body):
         # if (self.driver_state_abnormal_face)or self.driver_state_abnormal_body:
             self.one_frame_total_abnormality=True
             self.last_states_turning.clear()
@@ -217,8 +217,13 @@ class StateAnalyser:
         else:
             self.one_frame_body_state_abnormal=False
 
+        # TODO
+        # if self.face_prediction == 0 and self.face_predict_probabilities[0] > 0.9:
+        #     self.one_frame_face_state_abnormal = True
+        # else:
+        #     self.one_frame_face_state_abnormal = False
 
-        if self.face_prediction == 0 and self.face_predict_probabilities[0]>0.9:
+        if self.face_prediction == 0:
             self.one_frame_face_state_abnormal=True
         else:
             self.one_frame_face_state_abnormal=False
@@ -384,8 +389,12 @@ class StateAnalyser:
 
 
 
+print('cnn_model_v_8_16_2.pth aug')
+fvideo=StateAnalyser("cnn_model_v_8_16_2_aug.pth",using_mp=False,show=False,noise_correction=False,noise=5)
+fvideo.run()
+
 print('cnn_model_v_8_16_2.pth')
-fvideo=StateAnalyser("cnn_model_v_8_16_2.pth",using_mp=False,show=True,noise_correction=True,noise=5)
+fvideo=StateAnalyser("cnn_model_v_8_16_2_aug.pth",using_mp=False,show=False,noise_correction=True,noise=5)
 fvideo.run()
 # fvideo=StateAnalyser("cnn_model_v_8_16_2.pth",using_mp=False,show=False,noise_correction=True,noise=5)
 # fvideo.run()
