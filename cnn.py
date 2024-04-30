@@ -130,6 +130,26 @@ class CNN():
         #
         # return probabilities.squeeze().tolist(),predicted_class_index
 
+    def predict_probs(self, image):
+        image_pil = Image.fromarray(image)
+
+        transform = transforms.Compose([
+            transforms.Resize((80, 80)),  # Resize the images to 80x80
+            transforms.Grayscale(num_output_channels=1),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,))
+        ])
+
+        # Preprocess the image
+        image = transform(image_pil).unsqueeze(0)  # Add batch dimension
+
+        with torch.no_grad():
+            output = self.model(image)
+            probabilities = torch.softmax(output, dim=1)  # Calculate softmax probabilities
+            _, predicted = torch.max(output, 1)  # Get the predicted class index
+
+        return predicted.item(), probabilities.squeeze().numpy()  # Return predicted class label and probabilities
+
     def load_model(self,model_path):
         # Load the model
         model = nn.Sequential(

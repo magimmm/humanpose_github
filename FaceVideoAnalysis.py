@@ -347,9 +347,11 @@ class FaceAnalyser:
 # print('cnn_model_v_8_25_2.pth')
 # fvideo=FaceAnalyser("cnn_model_v_8_25_2.pth",using_mp=False,show=False,noise_correction=False,test_seq=False)
 # fvideo.run()
-print('cnn_model_v_8_20_aug.pth')
-fvideo=FaceAnalyser('cnn_model_v_8_20_2_aug.pth',using_mp=False,show=False,noise_correction=True,test_seq=True)
+print('cnn_model_v_8_16_aug.pth')
+fvideo=FaceAnalyser('cnn_model_v_8_16_2_aug.pth',using_mp=False,show=False,noise_correction=False,test_seq=False)
 fvideo.run()
+# fvideo=FaceAnalyser('cnn_model_v_8_16_2_aug.pth',using_mp=False,show=False,noise_correction=True,test_seq=True)
+# fvideo.run()
 #
 # print('cnn_model_v_8_50_2.pth')
 # fvideo=FaceAnalyser("cnn_model_v_8_50_2.pth",using_mp=False,show=False,noise_correction=True,test_seq=False)
